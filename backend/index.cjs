@@ -39,11 +39,7 @@ const client = new InfluxDB({ url, token });
  */
 app.get('/influx', async (req, res) => {
   const page = parseInt(req.query.page) || 1;
-<<<<<<< HEAD
-  const limit = 30;
-=======
   const limit = parseInt(req.query.limit) || 30; // allow limit from query
->>>>>>> d95776d (feat: Refactor backend API connections and enhance InfluxDB data fetching with pagination)
   const offset = (page - 1) * limit;
   const data = [];
 
