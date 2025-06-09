@@ -50,17 +50,11 @@ const Reports = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-<<<<<<< HEAD
-      const result = await fetchWithCache('http://localhost:5000/influx', 'reports_influx');
-      setData(result.data);
-
-=======
 
       const result = await fetchWithCache('http://localhost:5000/influx', 'reports_influx');
       setData(result.data);
 
 
->>>>>>> d95776d (feat: Refactor backend API connections and enhance InfluxDB data fetching with pagination)
       // Get unique devices
       const uniqueDevices = [...new Set(result.data.map(item => item.id))];
       setDevices(uniqueDevices);
