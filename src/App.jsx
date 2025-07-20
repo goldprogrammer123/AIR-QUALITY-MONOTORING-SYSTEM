@@ -3,28 +3,29 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 
 import MainLayout from "./Components/MainLayout";
 import Dashboard from "./Pages/Dashboard";
-import Reports from "./Pages/Reports";
-import Stats from "./Pages/Stats";
-import Settings from "./Pages/Settings";
+import AirReport from "./Pages/AirReport";
+import Recommendations from "./Pages/Recommendations";
+import WeatherStatus from "./Pages/WeatherStatus";
 import Location from "./Pages/location";
-import DeviceManagement from "./Pages/DeviceManagement";
+import SystemOverview from "./Pages/SystemOverview";
+import Home from "./Components/Home";
+
 
 const App = () => {
   return (
     <Router>
       <Routes>
         {/* Public Route */}
-       
+       <Route path="/" element={<Home />} />
 
         {/* Protected Routes with Sidebar */}
-        <Route path="/" element={<MainLayout />}>
-          <Route index element={<Dashboard />} />
+        <Route path="" element={<MainLayout />}>
+          <Route path="overview" element={<SystemOverview />} />
           <Route path="dashboard" element={<Dashboard />} />
-          <Route path="reports" element={<Reports />} />
-          <Route path="stats" element={<Stats />} />
-          <Route path="settings" element={<Settings />} />
+          <Route path="air-report" element={<AirReport />} />
+          <Route path="recommendations" element={<Recommendations />} />
+          <Route path="weather" element={<WeatherStatus />} />
           <Route path="location" element={<Location />} />
-          <Route path="DeviceManagment" element={<DeviceManagement />} />
         </Route>
       </Routes>
     </Router>

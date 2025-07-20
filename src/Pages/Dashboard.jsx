@@ -1,7 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { fetchWithCache } from "../utils/dataUtils";
+import { Download, FileText, BarChart3, Activity } from "lucide-react";
+import jsPDF from "jspdf";
+import "jspdf-autotable";
 
-const PAGE_LIMIT = 50; // items per page
+const PAGE_LIMIT = 100; // items per page
 
 const Dashboard = () => {
   const [allData, setAllData] = useState([]); // all loaded data so far
@@ -20,9 +23,9 @@ const Dashboard = () => {
   const fetchDataPage = async (pageNum) => {
     setLoading(true);
     try {
-      const cacheKey = `dashboard_page_${pageNum}`;
-      const result = await fetchWithCache(
-        `http://localhost:5000/influx?page=${pageNum}&limit=${PAGE_LIMIT}`,
+      const cacheKey =`dashboard_page_${pageNum}` ;
+      const result = await fetchWithCache(`http://localhost:3000/influx?page=${pageNum}&limit=${PAGE_LIMIT}`
+        ,
         cacheKey
       );
 
@@ -34,14 +37,20 @@ const Dashboard = () => {
         _time: item._time,
       }));
 
-      setAllData((prev) => [...prev, ...processedData]);
+      // Deduplicate based on _time and measurement
+      const uniqueData = processedData.filter((item) => {
+        const key = `${item._time}-${item.measurement}`;
+        return !allData.some((prevItem) => `${prevItem._time}-${prevItem.measurement}` === key);
+      });
+
+      setAllData((prev) => [...prev, ...uniqueData]);
 
       // Update device IDs after new data loaded
-      const uniqueDevices = [...new Set([...allData, ...processedData].map((item) => item.id))];
+      const uniqueDevices = [...new Set([...allData, ...uniqueData].map((item) => item.id))];
       setDeviceIds(uniqueDevices);
 
       // Determine if more pages exist
-      if (allData.length + processedData.length >= result.total) {
+      if (allData.length + uniqueData.length >= result.total) {
         setHasMore(false);
       }
     } catch (error) {
@@ -113,17 +122,166 @@ const Dashboard = () => {
     }
   };
 
+  // Export data to CSV
+  const exportToCSV = () => {
+    const dataToExport = filteredData.length > 0 ? filteredData : allData;
+    
+    if (dataToExport.length === 0) {
+      alert('No data to export');
+      return;
+    }
+
+    const headers = ['Device ID', 'Measurement', 'Value', 'Timestamp'];
+    const csvContent = [
+      headers.join(','),
+      ...dataToExport.map(item => [
+        item.id,
+        item.measurement,
+        item.value,
+        new Date(item._time).toLocaleString()
+      ].join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `air_quality_data_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // Export data to PDF (simplified version)
+  const exportToPDF = () => {
+    const dataToExport = filteredData.length > 0 ? filteredData : allData;
+
+    if (dataToExport.length === 0) {
+      alert('No data to export');
+      return;
+    }
+
+    const doc = new jsPDF();
+    doc.setFontSize(16);
+    doc.text("Air Quality Monitoring System - Data Report", 14, 16);
+    doc.setFontSize(10);
+    doc.text(`Generated on: ${new Date().toLocaleString()}`, 14, 24);
+    doc.text(`${selectedDevice ?`Device: ${selectedDevice}`  : 'All Devices'}`, 14, 30);
+    doc.text(`${selectedMeasurement ? `Measurement: ${selectedMeasurement}` : 'All Measurements'}`, 14, 36);
+    doc.text(Total `Records: ${dataToExport.length}`, 14, 42);
+
+    // Prepare table data
+    const tableColumn = ["Device ID", "Measurement", "Value", "Timestamp"];
+    const tableRows = dataToExport.slice(0, 100).map(item => [
+      item.id,
+      item.measurement,
+      item.value,
+      new Date(item._time).toLocaleString()
+    ]);
+
+    doc.autoTable({
+      head: [tableColumn],
+      body: tableRows,
+      startY: 48,
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [22, 160, 133] }
+    });
+
+    if (dataToExport.length > 100) {
+      doc.text(`... and ${dataToExport.length - 100} more records`, 14, doc.lastAutoTable.finalY + 10);
+    }
+
+    doc.save(`air_quality_report_${new Date().toISOString().split('T')[0]}.pdf`);
+  };
+
+  // Get data summary statistics
+  const getDataSummary = () => {
+    const dataToAnalyze = filteredData.length > 0 ? filteredData : allData;
+    
+    if (dataToAnalyze.length === 0) return null;
+
+    const measurements = [...new Set(dataToAnalyze.map(item => item.measurement))];
+    const devices = [...new Set(dataToAnalyze.map(item => item.id))];
+    
+    const latestTimestamp = new Date(Math.max(...dataToAnalyze.map(item => new Date(item._time))));
+    const oldestTimestamp = new Date(Math.min(...dataToAnalyze.map(item => new Date(item._time))));
+
+    return {
+      totalRecords: dataToAnalyze.length,
+      uniqueMeasurements: measurements.length,
+      uniqueDevices: devices.length,
+      latestReading: latestTimestamp,
+      oldestReading: oldestTimestamp,
+      timeSpan: Math.round((latestTimestamp - oldestTimestamp) / (1000 * 60 * 60 * 24)) // days
+    };
+  };
+
+  const summary = getDataSummary();
+
   return (
-    <div className="dashboard-container min-h-screen p-6 bg-gray-700 text-white">
+    <div className="min-h-screen text-white">
+      {/* Header with Export Options */}
+      <div className="glass-card rounded-xl p-6 mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h1 className="text-3xl font-bold text-white mb-2">Data Dashboard</h1>
+            <p className="text-white/70">Real-time air quality data monitoring and analysis</p>
+          </div>
+        </div>
+
+        {/* Data Summary */}
+        {summary && (
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-blue-400">{summary.uniqueDevices}</div>
+              <div className="text-sm text-white/60">Devices</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-purple-400">{summary.uniqueMeasurements}</div>
+              <div className="text-sm text-white/60">Measurements</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-yellow-400">{summary.timeSpan}</div>
+              <div className="text-sm text-white/60">Days Span</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-cyan-400">
+                {summary.latestReading.toLocaleDateString()}
+              </div>
+              <div className="text-sm text-white/60">Latest Reading</div>
+            </div>
+            <div className="flex space-x-3">
+              <button
+                onClick={exportToCSV}
+                className="glass-button px-4 py-2 rounded-lg text-white text-sm flex items-center space-x-2"
+              >
+                <Download className="w-4 h-4" />
+                <span>Export CSV</span>
+              </button>
+              {/* <button
+                onClick={exportToPDF}
+                className="glass-button px-4 py-2 rounded-lg text-white text-sm flex items-center space-x-2"
+              >
+                <FileText className="w-4 h-4" />
+                <span>Export Report</span>
+              </button> */}
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* Device Selection */}
-      <div className="bg-gray-800 shadow-md rounded-lg p-4 mb-4">
-        <h2 className="text-lg font-bold mb-2">Select Device</h2>
+      <div className="glass-card rounded-xl p-6 mb-6">
+        <h2 className="text-2xl font-bold mb-4 text-white">Select Device</h2>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
           {deviceIds.map((deviceId) => (
             <button
               key={deviceId}
-              className={`p-4 rounded-lg ${
-                selectedDevice === deviceId ? "bg-blue-600" : "bg-gray-700 hover:bg-gray-600"
+              className={`p-4 rounded-xl transition-all duration-300 ${
+                selectedDevice === deviceId 
+                  ? "glass-button text-white" 
+                  : "glass-card text-white hover:bg-emerald-500/20"
               }`}
               onClick={() => handleDeviceClick(deviceId)}
             >
@@ -135,14 +293,16 @@ const Dashboard = () => {
 
       {/* Measurement Selection */}
       {selectedDevice && measurements.length > 0 && (
-        <div className="bg-gray-800 shadow-md rounded-lg p-4 mb-4">
-          <h2 className="text-lg font-bold mb-2">Select Measurement</h2>
+        <div className="glass-card rounded-xl p-6 mb-6">
+          <h2 className="text-2xl font-bold mb-4 text-white">Select Measurement</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {measurements.map((measurement) => (
               <button
                 key={measurement}
-                className={`p-4 rounded-lg ${
-                  selectedMeasurement === measurement ? "bg-blue-600" : "bg-gray-700 hover:bg-gray-600"
+                className={`p-4 rounded-xl transition-all duration-300 ${
+                  selectedMeasurement === measurement 
+                    ? "glass-button text-white" 
+                    : "glass-card text-white hover:bg-emerald-500/20"
                 }`}
                 onClick={() => handleMeasurementClick(measurement)}
               >
@@ -154,33 +314,39 @@ const Dashboard = () => {
       )}
 
       {/* Data Table */}
-      <div className="bg-gray-800 shadow-md rounded-lg p-4">
-        <h2 className="text-lg font-bold mb-2">
-          {selectedDevice ? `Device: ${selectedDevice}` : "All Devices"}
-          {selectedMeasurement ? ` | Measurement: ${selectedMeasurement}` : ""}
-        </h2>
+      <div className="glass-card rounded-xl p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-2xl font-bold text-white">
+            {selectedDevice ? `Device: ${selectedDevice}` : "All Devices"}
+            {selectedMeasurement ? ` | Measurement: ${selectedMeasurement}` : ""}
+          </h2>
+          <div className="flex items-center space-x-2 text-white/60">
+            <Activity className="w-4 h-4" />
+            <span>{filteredData.length} records</span>
+          </div>
+        </div>
 
         {filteredData.length === 0 && !loading && (
-          <div className="text-center text-gray-400 py-4">No data available.</div>
+          <div className="text-center text-white/60 py-8 text-lg">No data available.</div>
         )}
 
-        <div className="overflow-x-auto max-h-[60vh]">
-          <table className="min-w-full border-collapse border text-sm">
-            <thead className="sticky top-0 bg-gray-900">
+        <div className="overflow-x-auto max-h-[60vh] rounded-xl">
+          <table className="min-w-full border-collapse glass-table rounded-xl">
+            <thead className="sticky top-0">
               <tr>
-                <th className="border p-2">Device ID</th>
-                <th className="border p-2">Measurement</th>
-                <th className="border p-2">Timestamp</th>
-                <th className="border p-2">Value</th>
+                <th className="border p-3 text-left text-white font-semibold">Device ID</th>
+                <th className="border p-3 text-left text-white font-semibold">Measurement</th>
+                <th className="border p-3 text-left text-white font-semibold">Timestamp</th>
+                <th className="border p-3 text-left text-white font-semibold">Value</th>
               </tr>
             </thead>
             <tbody>
               {filteredData.map((item, idx) => (
-                <tr key={idx} className="border hover:bg-gray-700">
-                  <td className="border p-2">{item.id}</td>
-                  <td className="border p-2">{item.measurement}</td>
-                  <td className="border p-2">{new Date(item._time).toLocaleString()}</td>
-                  <td className="border p-2">{item.value}</td>
+                <tr key={idx} className="border hover:bg-emerald-500/10 transition-colors">
+                  <td className="border p-3 text-white">{item.id}</td>
+                  <td className="border p-3 text-white">{item.measurement}</td>
+                  <td className="border p-3 text-white">{new Date(item._time).toLocaleString()}</td>
+                  <td className="border p-3 text-white">{item.value}</td>
                 </tr>
               ))}
             </tbody>
@@ -188,41 +354,24 @@ const Dashboard = () => {
         </div>
 
         {loading && (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: 16 }}>
-            <span style={{ marginBottom: 8, color: '#60a5fa', fontWeight: 600 }}>Loading...</span>
-            <div style={{
-              width: '50%',
-              height: 8,
-              background: '#374151',
-              borderRadius: 9999,
-              overflow: 'hidden',
-              position: 'relative'
-            }}>
+          <div className="flex flex-col items-center mt-6">
+            <span className="mb-4 text-emerald-400 font-semibold text-lg">Loading...</span>
+            <div className="w-1/2 h-3 bg-white/10 rounded-full overflow-hidden">
               <div
+                className="h-full w-2/5 bg-gradient-to-r from-emerald-400 to-emerald-600 rounded-full animate-pulse"
                 style={{
-                  height: '100%',
-                  width: '40%',
-                  background: 'linear-gradient(90deg, #60a5fa, #2563eb, #60a5fa)',
-                  position: 'absolute',
-                  left: 0,
-                  top: 0,
-                  borderRadius: 9999,
                   animation: 'loadingBarMove 1.5s linear infinite'
                 }}
               />
             </div>
-            {/* Inline keyframes for animation */}
-            <style>
-              {`
-                @keyframes loadingBarMove {
-                  0% { left: -40%; }
-                  100% { left: 100%; }
-                }
-              `}
-            </style>
           </div>
         )}
-        {!hasMore && <div className="text-center mt-4">No more data to load.</div>}
+        
+        {!hasMore && (
+          <div className="text-center mt-6 text-white/60 text-lg">
+            No more data to load.
+          </div>
+        )}
       </div>
     </div>
   );

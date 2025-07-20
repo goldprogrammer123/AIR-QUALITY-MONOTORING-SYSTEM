@@ -51,7 +51,7 @@ const Reports = () => {
     setLoading(true);
     try {
 
-      const result = await fetchWithCache('http://localhost:5000/influx', 'reports_influx');
+      const result = await fetchWithCache('http://localhost:3000/influx', 'reports_influx');
       setData(result.data);
 
 
@@ -115,7 +115,7 @@ const Reports = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-700 text-white p-6">
+    <div className="min-h-screen min-h-screen text-white">
       <div className="max-w-6xl mx-auto">
         <h1 className="text-3xl font-bold mb-8">Air Quality Report</h1>
         {loading && (
@@ -159,8 +159,8 @@ const Reports = () => {
               key={deviceId}
               onClick={() => setSelectedDevice(deviceId)}
               className={`p-4 rounded-lg ${
-                selectedDevice === deviceId ? 'bg-blue-600' : 'bg-gray-800'
-              } hover:bg-blue-500`}
+                selectedDevice === deviceId ? 'bg-emerald-600' : 'bg-gray-800'
+              } hover:bg-emerald-500`}
             >
               <h3 className="text-xl font-semibold mb-2">Device: {deviceId}</h3>
               <div className="grid grid-cols-2 gap-2 text-sm">
@@ -203,7 +203,7 @@ const Reports = () => {
         )}
 
         <button
-          className="mt-6 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+          className="mt-6 bg-emerald-500 text-white px-4 py-2 rounded hover:bg-emerald-600"
           onClick={fetchData}
         >
           Refresh Data

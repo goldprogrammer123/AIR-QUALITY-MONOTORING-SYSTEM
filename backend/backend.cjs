@@ -82,8 +82,8 @@ app.get('/influx', (req, res) => {
     |> filter(fn: (r) => r["id"] != "")
     |> keep(columns: ["id", "measurement", "value", "_time"])
     |> sort(columns: ["_time"], desc: true)
-    |> limit(n: ${limit}, offset: ${(page - 1) * limit})
-    `
+     |> limit(n: ${limit}, offset: ${(page - 1) * limit})
+    `,
     {
       next(row, tableMeta) {
         const o = tableMeta.toObject(row);

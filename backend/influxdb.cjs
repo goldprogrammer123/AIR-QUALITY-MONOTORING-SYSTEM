@@ -36,12 +36,12 @@ function saveDeviceMetadata(device_id, device_name, device_type, min, max, units
 }
 
 writeApi.queryRows(`
-  from(bucket: "live")
+from(bucket: "live")
   |> range(start: -10000000h)
   |> filter(fn: (r) => r["_measurement"] == "ardhi")
   |> pivot(rowKey: ["_time"], columnKey: ["_field"], valueColumn: "_value")
-  |> filter(fn: (r) => r["id"] != "")
-  |> keep(columns: ["id", "measurement", "value", "_time"])  
+  |> filter(fn: (r) => r["id"] == "ardhi-bme-280" or r["id"] == "bme680-ph-dox-full-sensor-test")
+  |> keep(columns: ["id", "_measurement", "value", "_time"]) 
 `, {
   next(row, tableMeta) {
     const o = tableMeta.toObject(row)

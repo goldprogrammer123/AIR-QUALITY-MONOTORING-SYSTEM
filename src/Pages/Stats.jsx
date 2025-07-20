@@ -75,7 +75,7 @@ const Stats = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const result = await fetchWithCache('http://localhost:5000/influx', 'stats_influx');
+      const result = await fetchWithCache('http://localhost:3000/influx', 'stats_influx');
       setData(result.data);
 
       // Get unique device IDs and measurements
@@ -155,41 +155,43 @@ const Stats = () => {
 
   // Add date selection controls to the UI
   return (
-    <div className="min-h-screen bg-gray-700 text-white p-6">
-      <div className="flex justify-between mb-4">
+    <div className="min-h-screen text-white">
+      <div className="flex flex-col lg:flex-row justify-between mb-6 gap-4">
         <div className="flex items-center space-x-4">
           <button
-            className="bg-blue-500 px-4 py-2 rounded hover:bg-blue-600"
+            className="glass-button px-6 py-3 rounded-xl text-white font-medium"
             onClick={() => setSelectedDate(subDays(selectedDate, 7))}
           >
             Previous Week
           </button>
-          <span className="font-medium">
+          <span className="font-medium text-lg">
             Week of {format(selectedDate, 'MMM dd, yyyy')}
           </span>
           <button
-            className="bg-blue-500 px-4 py-2 rounded hover:bg-blue-600"
+            className="glass-button px-6 py-3 rounded-xl text-white font-medium"
             onClick={() => setSelectedDate(new Date())}
           >
             Current Week
           </button>
         </div>
         <button
-          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+          className="glass-button text-white px-6 py-3 rounded-xl font-medium"
           onClick={fetchData}
         >
           Refresh Data
         </button>
       </div>
 
-      <div className="bg-gray-800 shadow-md rounded-lg p-4 mb-4">
-        <h2 className="text-lg font-bold mb-2">Select Device</h2>
+      <div className="glass-card rounded-xl p-6 mb-6">
+        <h2 className="text-2xl font-bold mb-4 text-white">Select Device</h2>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
           {deviceIds.map((deviceId) => (
             <button
               key={deviceId}
-              className={`p-4 rounded-lg ${
-                selectedDevice === deviceId ? "bg-blue-600" : "bg-gray-700 hover:bg-gray-600"
+              className={`p-4 rounded-xl transition-all duration-300 ${
+                selectedDevice === deviceId 
+                  ? "glass-button text-white" 
+                  : "glass-card text-white hover:bg-emerald-500/20"
               }`}
               onClick={() => handleDeviceClick(deviceId)}
             >
@@ -200,14 +202,16 @@ const Stats = () => {
       </div>
 
       {measurements.length > 0 && (
-        <div className="bg-gray-800 shadow-md rounded-lg p-4 mb-4">
-          <h2 className="text-lg font-bold mb-2">Select Measurement</h2>
+        <div className="glass-card rounded-xl p-6 mb-6">
+          <h2 className="text-2xl font-bold mb-4 text-white">Select Measurement</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {measurements.map((measurement) => (
               <button
                 key={measurement}
-                className={`p-4 rounded-lg ${
-                  selectedMeasurement === measurement ? "bg-blue-600" : "bg-gray-700 hover:bg-gray-600"
+                className={`p-4 rounded-xl transition-all duration-300 ${
+                  selectedMeasurement === measurement 
+                    ? "glass-button text-white" 
+                    : "glass-card text-white hover:bg-emerald-500/20"
                 }`}
                 onClick={() => handleMeasurementClick(measurement)}
               >
@@ -219,46 +223,25 @@ const Stats = () => {
       )}
 
       {selectedMeasurement && (
-        <div className="bg-gray-800 shadow-md rounded-lg p-4">
-          <h2 className="text-xl font-semibold mb-4">
+        <div className="glass-card rounded-xl p-6">
+          <h2 className="text-2xl font-semibold mb-6 text-white">
             {selectedMeasurement}
             {selectedDevice && ` - Device: ${selectedDevice}`}
           </h2>
           {loading && (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 16 }}>
-              <span style={{ marginBottom: 8, color: '#60a5fa', fontWeight: 600 }}>Loading...</span>
-              <div style={{
-                width: '50%',
-                height: 8,
-                background: '#374151',
-                borderRadius: 9999,
-                overflow: 'hidden',
-                position: 'relative'
-              }}>
+            <div className="flex flex-col items-center mb-6">
+              <span className="mb-4 text-emerald-400 font-semibold text-lg">Loading...</span>
+              <div className="w-1/2 h-3 bg-white/10 rounded-full overflow-hidden">
                 <div
+                  className="h-full w-2/5 bg-gradient-to-r from-emerald-400 to-emerald-600 rounded-full animate-pulse"
                   style={{
-                    height: '100%',
-                    width: '40%',
-                    background: 'linear-gradient(90deg, #60a5fa, #2563eb, #60a5fa)',
-                    position: 'absolute',
-                    left: 0,
-                    top: 0,
-                    borderRadius: 9999,
                     animation: 'loadingBarMove 1.5s linear infinite'
                   }}
                 />
               </div>
-              <style>
-                {`
-                  @keyframes loadingBarMove {
-                    0% { left: -40%; }
-                    100% { left: 100%; }
-                  }
-                `}
-              </style>
             </div>
           )}
-          <div className="bg-gray-900 p-4 rounded-lg" style={{ height: '400px' }}>
+          <div className="chart-container" style={{ height: '400px' }}>
             <Line options={options} data={createChartData(selectedMeasurement)} />
           </div>
         </div>
@@ -273,8 +256,8 @@ const groupDataByHour = (data) => {
   const groups = {};
   data.forEach(item => {
     const date = new Date(item._time);
-    date.setMinutes(0, 0, 0);
-    const key = date.getTime();
+date.setMinutes(0, 0, 0);
+const key = date.getTime();
     
     if (!groups[key]) {
       groups[key] = {
@@ -290,3 +273,4 @@ const groupDataByHour = (data) => {
     value: group.values.reduce((sum, val) => sum + val, 0) / group.values.length
   }));
 };
+

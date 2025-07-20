@@ -4,7 +4,7 @@ import Sidebar from "./Sidebar";
 
 const MainLayout = () => {
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen bg-gradient-to-br from-emerald-900 via-emerald-800 to-emerald-700">
       {/* Sidebar */}
       <div className="w-64 h-screen sticky top-0">
         <Sidebar />
@@ -12,7 +12,9 @@ const MainLayout = () => {
 
       {/* Main Content */}
       <div className="flex-1 p-6 overflow-auto">
-        <Outlet />
+        <div className="glass-card rounded-xl p-6 min-h-full">
+          <Outlet />
+        </div>
       </div>
     </div>
   );
