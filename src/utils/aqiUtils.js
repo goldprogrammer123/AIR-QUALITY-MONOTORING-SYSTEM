@@ -92,7 +92,7 @@ export const calculateAQI = (nox = 0, voc = 0, co2 = 0, benzene = 0) => {
     pollutant = 'None';
   }
 
-  return { aqi, pollutant };
+  return { aqi, pollutant, pollutants: { nox: noxAqi, voc: vocAqi, co2: co2Aqi, benzene: benzeneAqi } };
 };
 
 export const getAQIStatus = (aqi) => {

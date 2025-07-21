@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Line, Bar } from 'react-chartjs-2';
+import { Line, Bar, Pie } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -7,6 +7,7 @@ import {
   PointElement,
   LineElement,
   BarElement,
+  ArcElement,
   Title,
   Tooltip,
   Legend,
@@ -25,6 +26,7 @@ ChartJS.register(
   PointElement,
   LineElement,
   BarElement,
+  ArcElement,
   Title,
   Tooltip,
   Legend,
@@ -40,6 +42,7 @@ const AirReport = () => {
   const [dominantPollutant, setDominantPollutant] = useState('None');
   const [selectedTimeRange, setSelectedTimeRange] = useState('24h');
   const [pollutantValues, setPollutantValues] = useState({ nox: 0, voc: 0, co2: 0, benzene: 0 });
+  const [pollutantAQIs, setPollutantAQIs] = useState({ nox: 0, voc: 0, co2: 0, benzene: 0 });
   const [dataWarning, setDataWarning] = useState('');
 
   const fetchData = async () => {
@@ -62,7 +65,7 @@ const AirReport = () => {
       if (processedData.length > 0) {
         const pollutantData = extractPollutantData(processedData);
         setPollutantValues(pollutantData);
-        const { aqi, pollutant } = calculateAQI(
+        const { aqi, pollutant, pollutants } = calculateAQI(
           pollutantData.nox,
           pollutantData.voc,
           pollutantData.co2,
@@ -71,6 +74,7 @@ const AirReport = () => {
         setCurrentAQI(aqi);
         setDominantPollutant(pollutant);
         setAqiStatus(getAQIStatus(aqi).status);
+        setPollutantAQIs(pollutants);
         setDataWarning(pollutantData.nox === 0 && pollutantData.voc === 0 &&
                        pollutantData.co2 === 0 && pollutantData.benzene === 0
           ? 'No pollutant data found' : '');
@@ -153,6 +157,36 @@ const AirReport = () => {
     };
   };
 
+  const createPieChartData = () => {
+    return {
+      labels: ['NOx', 'VOC', 'CO2', 'Benzene'],
+      datasets: [
+        {
+          label: 'Pollutant AQI Contribution',
+          data: [
+            pollutantAQIs.nox,
+            pollutantAQIs.voc,
+            pollutantAQIs.co2,
+            pollutantAQIs.benzene,
+          ],
+          backgroundColor: [
+            'rgba(59, 130, 246, 0.8)',  // NOx
+            'rgba(245, 158, 11, 0.8)',  // VOC
+            'rgba(16, 185, 129, 0.8)',  // CO2
+            'rgba(239, 68, 68, 0.8)',   // Benzene
+          ],
+          borderColor: [
+            'rgba(59, 130, 246, 1)',
+            'rgba(245, 158, 11, 1)',
+            'rgba(16, 185, 129, 1)',
+            'rgba(239, 68, 68, 1)',
+          ],
+          borderWidth: 1,
+        },
+      ],
+    };
+  };
+
   const lineChartOptions = {
     responsive: true,
     maintainAspectRatio: false,
@@ -172,7 +206,6 @@ const AirReport = () => {
   };
 
   const barChartOptions = {
-    indexAxis: 'y',
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
@@ -180,9 +213,25 @@ const AirReport = () => {
       title: { display: false },
     },
     scales: {
-      y: { grid: { color: 'rgba(255, 255, 255, 0.05)' }, ticks: { color: 'white' } },
-      x: { beginAtZero: true, grid: { color: 'rgba(255, 255, 255, 0.1)' }, ticks: { color: 'white' } }
+      x: { grid: { color: 'rgba(255, 255, 255, 0.05)' }, ticks: { color: 'white' } },
+      y: { beginAtZero: true, grid: { color: 'rgba(255, 255, 255, 0.1)' }, ticks: { color: 'white' } }
     }
+  };
+
+  const pieChartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: 'top',
+        labels: {
+          color: 'white',
+        },
+      },
+      title: {
+        display: false,
+      },
+    },
   };
 
   const aqiStatusInfo = getAQIStatus(currentAQI);
@@ -363,13 +412,24 @@ const AirReport = () => {
         </div>
       </div>
 
-      <div className="glass-card rounded-xl p-6">
-        <h2 className="text-2xl font-bold text-white mb-4">Current Pollutant Levels</h2>
-        <div className="h-80">
-          <Bar
-            data={createPollutantData()}
-            options={barChartOptions}
-          />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="glass-card rounded-xl p-6">
+          <h2 className="text-2xl font-bold text-white mb-4">Current Pollutant Levels</h2>
+          <div className="h-80">
+            <Bar
+              data={createPollutantData()}
+              options={barChartOptions}
+            />
+          </div>
+        </div>
+        <div className="glass-card rounded-xl p-6">
+          <h2 className="text-2xl font-bold text-white mb-4">Pollutant AQI Contribution</h2>
+          <div className="h-80">
+            <Pie
+              data={createPieChartData()}
+              options={pieChartOptions}
+            />
+          </div>
         </div>
       </div>
     </div>
