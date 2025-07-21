@@ -195,12 +195,12 @@ const AirReport = () => {
       title: { display: false },
     },
     scales: {
-      y: { beginAtZero: true, grid: { color: 'rgba(255, 255, 255, 0.1)' }, ticks: { color: 'white' } },
+      y: { beginAtZero: true, grid: { color: 'rgba(255, 255, 255, 0.1)' }, ticks: { color: 'black' } },
       x: {
         type: 'time',
         time: { unit: selectedTimeRange === '24h' ? 'hour' : 'day', displayFormats: { hour: 'HH:mm', day: 'MMM dd' } },
         grid: { color: 'rgba(255, 255, 255, 0.1)' },
-        ticks: { color: 'white' }
+        ticks: { color: 'black' }
       }
     }
   };
@@ -213,8 +213,8 @@ const AirReport = () => {
       title: { display: false },
     },
     scales: {
-      x: { grid: { color: 'rgba(255, 255, 255, 0.05)' }, ticks: { color: 'white' } },
-      y: { beginAtZero: true, grid: { color: 'rgba(255, 255, 255, 0.1)' }, ticks: { color: 'white' } }
+      x: { grid: { color: 'rgba(255, 255, 255, 0.05)' }, ticks: { color: 'black' } },
+      y: { beginAtZero: true, grid: { color: 'rgba(255, 255, 255, 0.1)' }, ticks: { color: 'black' } }
     }
   };
 
@@ -225,7 +225,7 @@ const AirReport = () => {
       legend: {
         position: 'top',
         labels: {
-          color: 'white',
+          color: 'black',
         },
       },
       title: {
@@ -238,8 +238,8 @@ const AirReport = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen text-white">
-        <div className="glass-card rounded-xl p-6">
+      <div className="min-h-screen text-black">
+        <div className="bg-white shadow-2xl rounded-xl p-6">
           <div className="flex flex-col items-center py-12">
             <span className="mb-4 text-emerald-400 font-semibold text-lg">Loading air quality data...</span>
             <div className="w-1/2 h-3 bg-white/10 rounded-full overflow-hidden">
@@ -255,16 +255,16 @@ const AirReport = () => {
   }
 
   return (
-    <div className="min-h-screen text-white">
-      <div className="glass-card rounded-xl p-6 mb-6">
+    <div className="min-h-screen text-black">
+      <div className="bg-white shadow-2xl rounded-xl p-6 mb-6">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h1 className="text-3xl font-bold text-white mb-2">Air Quality Report</h1>
-            <p className="text-white/70">Real-time air quality monitoring</p>
+            <h1 className="text-3xl font-bold text-black mb-2">Air Quality Report</h1>
+            <p className="text-black/70">Real-time air quality monitoring</p>
           </div>
           <button
             onClick={fetchData}
-            className="glass-button px-6 py-3 rounded-xl text-white font-medium"
+            className="glass-button px-6 py-3 rounded-xl text-black font-medium"
           >
             Refresh Data
           </button>
@@ -272,7 +272,7 @@ const AirReport = () => {
       </div>
 
       {dataWarning && (
-        <div className="glass-card rounded-xl p-6 mb-6 bg-red-500/20">
+        <div className="bg-white shadow-2xl rounded-xl p-6 mb-6 bg-red-500/20">
           <div className="flex items-center space-x-3">
             <AlertTriangle className="w-6 h-6 text-red-400" />
             <span className="text-red-400">{dataWarning}</span>
@@ -280,31 +280,66 @@ const AirReport = () => {
         </div>
       )}
 
-      <div className="glass-card rounded-xl p-6 mb-6">
-        <h3 className="text-xl font-semibold mb-4 text-white">Debug: Pollutant Values</h3>
-        <div className="space-y-2">
-          <div className="flex justify-between">
-            <span>NOx (ppb):</span>
-            <span>{pollutantValues.nox.toFixed(2)}</span>
+      <div className="bg-white shadow-2xl rounded-xl p-6 mb-6">
+        <h3 className="text-xl font-semibold mb-4 text-black">Pollutant Values</h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="bg-white shadow rounded-xl p-4 flex flex-col items-center">
+            <span className="text-xs text-black/60">NOx (ppb)</span>
+            <span className="text-xl font-bold text-black">{pollutantValues.nox.toFixed(2)}</span>
           </div>
-          <div className="flex justify-between">
-            <span>VOC (ppb):</span>
-            <span>{pollutantValues.voc.toFixed(2)}</span>
+          <div className="bg-white shadow rounded-xl p-4 flex flex-col items-center">
+            <span className="text-xs text-black/60">VOC (ppb)</span>
+            <span className="text-xl font-bold text-black">{pollutantValues.voc.toFixed(2)}</span>
           </div>
-          <div className="flex justify-between">
-            <span>CO2 (ppm):</span>
-            <span>{pollutantValues.co2.toFixed(2)}</span>
+          <div className="bg-white shadow rounded-xl p-4 flex flex-col items-center">
+            <span className="text-xs text-black/60">CO2 (ppm)</span>
+            <span className="text-xl font-bold text-black">{pollutantValues.co2.toFixed(2)}</span>
           </div>
-          <div className="flex justify-between">
-            <span>Benzene (ppb):</span>
-            <span>{pollutantValues.benzene.toFixed(2)}</span>
+          <div className="bg-white shadow rounded-xl p-4 flex flex-col items-center">
+            <span className="text-xs text-black/60">Benzene (ppb)</span>
+            <span className="text-xl font-bold text-black">{pollutantValues.benzene.toFixed(2)}</span>
           </div>
         </div>
       </div>
 
+      {/* Example Table for Pollutant Data (if you want a table view) */}
+      {/*
+      <div className="bg-white shadow-2xl rounded-xl p-6 mb-6">
+        <h3 className="text-xl font-semibold mb-4 text-black">Pollutant Data Table</h3>
+        <div className="overflow-x-auto">
+          <table className="min-w-full border border-gray-200 rounded-xl">
+            <thead>
+              <tr className="bg-white">
+                <th className="p-3 border-b border-gray-200 text-left text-black font-bold">Pollutant</th>
+                <th className="p-3 border-b border-gray-200 text-left text-black font-bold">Value</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr className="bg-gray-50">
+                <td className="p-3 border-b border-gray-100 text-black">NOx (ppb)</td>
+                <td className="p-3 border-b border-gray-100 text-black">{pollutantValues.nox.toFixed(2)}</td>
+              </tr>
+              <tr>
+                <td className="p-3 border-b border-gray-100 text-black">VOC (ppb)</td>
+                <td className="p-3 border-b border-gray-100 text-black">{pollutantValues.voc.toFixed(2)}</td>
+              </tr>
+              <tr className="bg-gray-50">
+                <td className="p-3 border-b border-gray-100 text-black">CO2 (ppm)</td>
+                <td className="p-3 border-b border-gray-100 text-black">{pollutantValues.co2.toFixed(2)}</td>
+              </tr>
+              <tr>
+                <td className="p-3 border-b border-gray-100 text-black">Benzene (ppb)</td>
+                <td className="p-3 border-b border-gray-100 text-black">{pollutantValues.benzene.toFixed(2)}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      */}
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         <div className="lg:col-span-2">
-          <div className={`glass-card rounded-xl p-6 ${aqiStatusInfo.color}`}>
+          <div className={`bg-white shadow-2xl rounded-xl p-6 ${aqiStatusInfo.color}`}>
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center space-x-3">
                 {aqiStatusInfo.icon === 'CheckCircle' && <CheckCircle className="w-6 h-6" />}
@@ -331,46 +366,46 @@ const AirReport = () => {
         </div>
 
         <div className="lg:col-span-1">
-          <div className="glass-card rounded-xl p-6">
-            <h3 className="text-xl font-semibold mb-4 text-white">AQI Scale</h3>
+          <div className="bg-white shadow-2xl rounded-xl p-6">
+            <h3 className="text-xl font-semibold mb-4 text-black">AQI Scale</h3>
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-emerald-400">0-50</span>
-                <span className="text-white">Good</span>
+                <span className="text-black">Good</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-yellow-400">51-100</span>
-                <span className="text-white">Moderate</span>
+                <span className="text-black">Moderate</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-orange-400">101-150</span>
-                <span className="text-white">Unhealthy for Sensitive Groups</span>
+                <span className="text-black">Unhealthy for Sensitive Groups</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-red-400">151-200</span>
-                <span className="text-white">Unhealthy</span>
+                <span className="text-black">Unhealthy</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-purple-400">201-300</span>
-                <span className="text-white">Very Unhealthy</span>
+                <span className="text-black">Very Unhealthy</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-red-800">301+</span>
-                <span className="text-white">Hazardous</span>
+                <span className="text-black">Hazardous</span>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="glass-card rounded-xl p-6 mb-6">
+      <div className="bg-white shadow-2xl rounded-xl p-6 mb-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-2xl font-bold text-white">Historical AQI Trends</h2>
+          <h2 className="text-2xl font-bold text-black">Historical AQI Trends</h2>
           <div className="flex space-x-2">
             <button
               onClick={() => setSelectedTimeRange('24h')}
               className={`px-4 py-2 rounded-lg transition-all ${
-                selectedTimeRange === '24h' ? 'glass-button text-white' : 'glass-card text-white hover:bg-emerald-500/20'
+                selectedTimeRange === '24h' ? 'glass-button text-black' : 'bg-white shadow-2xl text-black hover:bg-emerald-500/20'
               }`}
             >
               24 Hours
@@ -378,7 +413,7 @@ const AirReport = () => {
             <button
               onClick={() => setSelectedTimeRange('7d')}
               className={`px-4 py-2 rounded-lg transition-all ${
-                selectedTimeRange === '7d' ? 'glass-button text-white' : 'glass-card text-white hover:bg-emerald-500/20'
+                selectedTimeRange === '7d' ? 'glass-button text-black' : 'bg-white shadow-2xl text-black hover:bg-emerald-500/20'
               }`}
             >
               7 Days
@@ -397,7 +432,7 @@ const AirReport = () => {
                   if (!ctx) return 'rgba(16, 185, 129, 0.1)';
                   const gradient = ctx.createLinearGradient(0, 0, 0, 250);
                   gradient.addColorStop(0, 'rgba(16, 185, 129, 0.5)');
-                  gradient.addColorStop(1, 'rgba(16, 185, 129, 0)');
+                  gradient.addColorStop(1, 'rgba(48, 50, 50, 0)');
                   return gradient;
                 },
                 tension: 0.4,
@@ -413,8 +448,8 @@ const AirReport = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="glass-card rounded-xl p-6">
-          <h2 className="text-2xl font-bold text-white mb-4">Current Pollutant Levels</h2>
+        <div className="bg-white shadow-2xl rounded-xl p-6">
+          <h2 className="text-2xl font-bold text-black mb-4">Current Pollutant Levels</h2>
           <div className="h-80">
             <Bar
               data={createPollutantData()}
@@ -422,8 +457,8 @@ const AirReport = () => {
             />
           </div>
         </div>
-        <div className="glass-card rounded-xl p-6">
-          <h2 className="text-2xl font-bold text-white mb-4">Pollutant AQI Contribution</h2>
+        <div className="bg-white shadow-2xl rounded-xl p-6">
+          <h2 className="text-2xl font-bold text-black mb-4">Pollutant AQI Contribution</h2>
           <div className="h-80">
             <Pie
               data={createPieChartData()}
