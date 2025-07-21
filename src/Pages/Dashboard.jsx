@@ -227,38 +227,36 @@ const Dashboard = () => {
   const summary = getDataSummary();
 
   return (
-    <div className="min-h-screen text-white">
+    <div className="min-h-screen text-black">
       {/* Header with Export Options */}
-      <div className="glass-card rounded-xl p-6 mb-6">
-        <div className="flex items-center justify-between mb-4">
+      <div className="bg-white shadow-2xl rounded-xl p-6 mb-6">
+        <div className="flex items-center justify-between mb-4 ">
           <div>
-            <h1 className="text-3xl font-bold text-white mb-2">Data Dashboard</h1>
-            <p className="text-white/70">Real-time air quality data monitoring and analysis</p>
+            <h1 className="text-3xl font-bold text-black mb-2">Data Dashboard</h1>
+            <p className="text-black/70">Real-time air quality data monitoring and analysis</p>
           </div>
         </div>
 
         {/* Data Summary */}
         {summary && (
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-blue-400">{summary.uniqueDevices}</div>
-              <div className="text-sm text-white/60">Devices</div>
+            <div className="bg-white shadow rounded-xl p-4 flex flex-col items-center">
+              <div className="text-2xl font-semibold text-black">{summary.uniqueDevices}</div>
+              <div className="text-sm font-bold text-black/60">Devices</div>
             </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-purple-400">{summary.uniqueMeasurements}</div>
-              <div className="text-sm text-white/60">Measurements</div>
+            <div className="bg-white shadow rounded-xl p-4 flex flex-col items-center">
+              <div className="text-2xl font-bold text-black">{summary.uniqueMeasurements}</div>
+              <div className="text-sm font-semibold text-black/60">Measurements</div>
             </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-yellow-400">{summary.timeSpan}</div>
-              <div className="text-sm text-white/60">Days Span</div>
+            <div className="bg-white shadow rounded-xl p-4 flex flex-col items-center">
+              <div className="text-2xl font-bold text-black">{summary.timeSpan}</div>
+              <div className="text-sm font-semibold text-black/60">Days Span</div>
             </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-cyan-400">
-                {summary.latestReading.toLocaleDateString()}
-              </div>
-              <div className="text-sm text-white/60">Latest Reading</div>
+            <div className="bg-white shadow rounded-xl p-4 flex flex-col items-center">
+              <div className="text-2xl font-bold text-black">{summary.latestReading.toLocaleDateString()}</div>
+              <div className="text-sm font-semibold text-black/60">Latest Reading</div>
             </div>
-            <div className="flex space-x-3">
+            <div className="flex flex-col justify-center items-center">
               <button
                 onClick={exportToCSV}
                 className="glass-button px-4 py-2 rounded-lg text-white text-sm flex items-center space-x-2"
@@ -279,16 +277,16 @@ const Dashboard = () => {
       </div>
 
       {/* Device Selection */}
-      <div className="glass-card rounded-xl p-6 mb-6">
-        <h2 className="text-2xl font-bold mb-4 text-white">Select Device</h2>
+      <div className="bg-white shadow-2xl rounded-xl p-6 mb-6">
+        <h2 className="text-2xl font-bold mb-4 text-black">Select Device</h2>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
           {deviceIds.map((deviceId) => (
             <button
               key={deviceId}
               className={`p-4 rounded-xl transition-all duration-300 ${
                 selectedDevice === deviceId 
-                  ? "glass-button text-white" 
-                  : "glass-card text-white hover:bg-emerald-500/20"
+                  ? "glass-button text-black" 
+                  : "glass-card text-black hover:bg-black-500/20"
               }`}
               onClick={() => handleDeviceClick(deviceId)}
             >
@@ -300,16 +298,16 @@ const Dashboard = () => {
 
       {/* Measurement Selection */}
       {selectedDevice && measurements.length > 0 && (
-        <div className="glass-card rounded-xl p-6 mb-6">
-          <h2 className="text-2xl font-bold mb-4 text-white">Select Measurement</h2>
+        <div className="bg-white shadow-2xl rounded-xl p-6 mb-6">
+          <h2 className="text-2xl font-bold mb-4 text-black">Select Measurement</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {measurements.map((measurement) => (
               <button
                 key={measurement}
                 className={`p-4 rounded-xl transition-all duration-300 ${
                   selectedMeasurement === measurement 
-                    ? "glass-button text-white" 
-                    : "glass-card text-white hover:bg-emerald-500/20"
+                    ? "glass-button text-black" 
+                    : "glass-card text-black hover:bg-emerald"
                 }`}
                 onClick={() => handleMeasurementClick(measurement)}
               >
@@ -321,39 +319,39 @@ const Dashboard = () => {
       )}
 
       {/* Data Table */}
-      <div className="glass-card rounded-xl p-6">
+      <div className="bg-white shadow-2xl rounded-xl p-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-2xl font-bold text-white">
+          <h2 className="text-2xl font-bold text-black">
             {selectedDevice ? `Device: ${selectedDevice}` : "All Devices"}
             {selectedMeasurement ? ` | Measurement: ${selectedMeasurement}` : ""}
           </h2>
-          <div className="flex items-center space-x-2 text-white/60">
+          <div className="flex items-center space-x-2 text-black/60">
             <Activity className="w-4 h-4" />
             <span>{filteredData.length} records</span>
           </div>
         </div>
 
         {filteredData.length === 0 && !loading && (
-          <div className="text-center text-white/60 py-8 text-lg">No data available.</div>
+          <div className="text-center text-black/60 py-8 text-lg">No data available.</div>
         )}
 
         <div className="overflow-x-auto max-h-[60vh] rounded-xl">
           <table className="min-w-full border-collapse glass-table rounded-xl">
             <thead className="sticky top-0">
               <tr>
-                <th className="border p-3 text-left text-white font-semibold">Device ID</th>
-                <th className="border p-3 text-left text-white font-semibold">Measurement</th>
-                <th className="border p-3 text-left text-white font-semibold">Timestamp</th>
-                <th className="border p-3 text-left text-white font-semibold">Value</th>
+                <th className="border p-3 text-left text-black font-semibold">Device ID</th>
+                <th className="border p-3 text-left text-black font-semibold">Measurement</th>
+                <th className="border p-3 text-left text-black font-semibold">Timestamp</th>
+                <th className="border p-3 text-left text-black font-semibold">Value</th>
               </tr>
             </thead>
             <tbody>
               {filteredData.map((item, idx) => (
-                <tr key={idx} className="border hover:bg-emerald-500/10 transition-colors">
-                  <td className="border p-3 text-white">{item.id}</td>
-                  <td className="border p-3 text-white">{item.measurement}</td>
-                  <td className="border p-3 text-white">{new Date(item._time).toLocaleString()}</td>
-                  <td className="border p-3 text-white">{item.value}</td>
+                <tr key={idx} className="border hover:bg-emerald-700/10 transition-colors">
+                  <td className="border p-3 text-black">{item.id}</td>
+                  <td className="border p-3 text-black">{item.measurement}</td>
+                  <td className="border p-3 text-black">{new Date(item._time).toLocaleString()}</td>
+                  <td className="border p-3 text-black">{item.value}</td>
                 </tr>
               ))}
             </tbody>
@@ -375,7 +373,7 @@ const Dashboard = () => {
         )}
         
         {!hasMore && (
-          <div className="text-center mt-6 text-white/60 text-lg">
+          <div className="text-center mt-6 text-black/60 text-lg">
             No more data to load.
           </div>
         )}

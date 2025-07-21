@@ -13,7 +13,7 @@ import {
 
 const Sidebar = () => {
   return (
-    <div className="w-64 glass h-screen p-5 flex flex-col">
+    <div className="w-[280px] glass h-screen p-5 flex flex-col">
       {/* Logo Section */}
       <div className="flex items-center justify-center mb-8">
         <div className="relative">
@@ -27,7 +27,7 @@ const Sidebar = () => {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1">
+      <nav className="flex-1 bg-white shadow-2xl">
         <ul className="space-y-3">
           <li>
             <Link
@@ -36,9 +36,9 @@ const Sidebar = () => {
             >
               <Activity
                 size={20}
-                className="text-emerald-400 group-hover:text-white transition-colors"
+                className="text-emerald-400 group-hover:text-black transition-colors"
               />
-              <span className="text-white font-medium">System Overview</span>
+              <span className="text-black font-medium">System Overview</span>
             </Link>
           </li>
           <li>
@@ -48,9 +48,9 @@ const Sidebar = () => {
             >
               <LayoutDashboard
                 size={20}
-                className="text-emerald-400 group-hover:text-white transition-colors"
+                className="text-emerald-400 group-hover:text-black transition-colors"
               />
-              <span className="text-white font-medium">Dashboard</span>
+              <span className="text-black font-medium">Dashboard</span>
             </Link>
           </li>
           <li>
@@ -60,9 +60,9 @@ const Sidebar = () => {
             >
               <TrendingUp
                 size={20}
-                className="text-emerald-400 group-hover:text-white transition-colors"
+                className="text-emerald-400 group-hover:text-black transition-colors"
               />
-              <span className="text-white font-medium">Air Report</span>
+              <span className="text-black font-medium">Air Report</span>
             </Link>
           </li>
           <li>
@@ -72,9 +72,9 @@ const Sidebar = () => {
             >
               <Lightbulb
                 size={20}
-                className="text-emerald-400 group-hover:text-white transition-colors"
+                className="text-emerald-400 group-hover:text-black transition-colors"
               />
-              <span className="text-white font-medium">Recommendations</span>
+              <span className="text-black font-medium">Recommendations</span>
             </Link>
           </li>
           <li>
@@ -84,9 +84,9 @@ const Sidebar = () => {
             >
               <Cloud
                 size={20}
-                className="text-emerald-400 group-hover:text-white transition-colors"
+                className="text-emerald-400 group-hover:text-black transition-colors"
               />
-              <span className="text-white font-medium">Weather Status</span>
+              <span className="text-black font-medium">Weather Status</span>
             </Link>
           </li>
           <li>
@@ -96,9 +96,9 @@ const Sidebar = () => {
             >
               <MapPin
                 size={20}
-                className="text-emerald-400 group-hover:text-white transition-colors"
+                className="text-emerald-400 group-hover:text-black transition-colors"
               />
-              <span className="text-white font-medium">Sensor Locations</span>
+              <span className="text-black font-medium">Sensor Locations</span>
             </Link>
           </li>
         </ul>
@@ -108,7 +108,7 @@ const Sidebar = () => {
       <div className="mt-auto">
         <Link
           to="/"
-          className="flex items-center space-x-3 p-4 glass-button rounded-xl text-white font-medium transition-all duration-300"
+          className="flex items-center space-x-3 p-4 glass-button rounded-xl text-black font-medium transition-all duration-300"
         >
           <FileText size={20} />
           <span>Back Home</span>
