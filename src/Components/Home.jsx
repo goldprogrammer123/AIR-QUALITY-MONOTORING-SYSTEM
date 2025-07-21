@@ -4,7 +4,7 @@ import { ArrowRight, BarChart3, MapPin, FileText, LayoutDashboard } from 'lucide
 
 const Home = () => {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-1500 via-green-850 to-green-1500 flex items-center justify-center p-6">
+    <div className="min-h-screen bg-[#05014a] flex items-center justify-center p-6">
       <div className="glass-card rounded-2xl p-12 max-w-4xl w-full text-center">
         <div className="mb-8">
           <h1 className="text-5xl font-bold text-white mb-4">
