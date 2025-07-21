@@ -28,7 +28,7 @@ const Location = () => {
     setError(null);
     try {
       // Fetch device data from your backend
-      const result = await fetchWithCache("http://localhost:3000/influx", "location_sensors");
+      const result = await fetchWithCache("https://ttn-postgres-1.onrender.com/api/sensordata/?format=json", "location_sensors");
       
       // Process the data to extract unique devices and their latest readings
       const deviceMap = new Map();
