@@ -42,79 +42,44 @@ const AirReport = () => {
   const [pollutantValues, setPollutantValues] = useState({ nox: 0, voc: 0, co2: 0, benzene: 0 });
   const [dataWarning, setDataWarning] = useState('');
 
-  // Toggle to switch between API and mock data (set to false to try API)
-  const USE_MOCK_DATA = true;
-
-  const mockData = {
-    data: [
-      { measurement: "NOx", value: 0.05, _time: "2025-06-26T18:04:32.07Z", id: "ardhi-bme-280" },
-      { measurement: "VOC", value: 50, _time: "2025-06-26T18:04:16.758Z", id: "bme680-ph-dox-full-sensor-test" },
-      { measurement: "CO2", value: 212.1, _time: "2025-06-26T18:04:32.069Z", id: "ardhi-bme-280" },
-      { measurement: "Benzene", value: 0.01, _time: "2025-06-26T18:04:32.073Z", id: "ardhi-bme-280" }
-    ]
-  };
-
   const fetchData = async () => {
     setLoading(true);
     try {
-      let result;
-      if (USE_MOCK_DATA) {
-        result = mockData;
-        console.log('AirReport - Using mock data:', result.data);
-      } else {
-        result = await fetchWithCache('http://localhost:3000/influx', 'air_report', { bypassCache: true });
-        console.log('AirReport - Fetched data from API:', result.data);
-      }
+      const result = await fetchWithCache('/api/sensordata/?format=json', 'air_report_data');
+      const processedData = (result || []).flatMap((item) =>
+        (item.measurements || []).map((measurement) => ({
+          id: item.device_id,
+          measurement: measurement.name,
+          value:
+            typeof measurement.value === 'number'
+              ? Number(measurement.value.toFixed(6))
+              : measurement.value,
+          _time: item.received_at,
+        }))
+      );
+      setData(processedData);
 
-      if (!result.data || !Array.isArray(result.data)) {
-        throw new Error('Invalid data format: data is not an array');
-      }
-      setData(result.data);
-
-      if (result.data.length > 0) {
-        const pollutantData = extractPollutantData(result.data);
+      if (processedData.length > 0) {
+        const pollutantData = extractPollutantData(processedData);
         setPollutantValues(pollutantData);
-        console.log('AirReport - Extracted pollutants:', pollutantData);
         const { aqi, pollutant } = calculateAQI(
           pollutantData.nox,
           pollutantData.voc,
           pollutantData.co2,
           pollutantData.benzene
         );
-        console.log('AirReport - Calculated AQI:', { aqi, pollutant });
         setCurrentAQI(aqi);
         setDominantPollutant(pollutant);
         setAqiStatus(getAQIStatus(aqi).status);
-        setDataWarning(pollutantData.nox === 0 && pollutantData.voc === 0 && 
-                       pollutantData.co2 === 0 && pollutantData.benzene === 0 
+        setDataWarning(pollutantData.nox === 0 && pollutantData.voc === 0 &&
+                       pollutantData.co2 === 0 && pollutantData.benzene === 0
           ? 'No pollutant data found' : '');
       } else {
         setDataWarning('No data received from API');
       }
     } catch (error) {
       console.error('AirReport - Error fetching data:', error.message, error);
-      // Fallback to mock data if API fails
-      if (!USE_MOCK_DATA) {
-        console.log('AirReport - Falling back to mock data');
-        result = mockData;
-        setData(result.data);
-        const pollutantData = extractPollutantData(result.data);
-        setPollutantValues(pollutantData);
-        console.log('AirReport - Extracted pollutants (mock):', pollutantData);
-        const { aqi, pollutant } = calculateAQI(
-          pollutantData.nox,
-          pollutantData.voc,
-          pollutantData.co2,
-          pollutantData.benzene
-        );
-        console.log('AirReport - Calculated AQI (mock):', { aqi, pollutant });
-        setCurrentAQI(aqi);
-        setDominantPollutant(pollutant);
-        setAqiStatus(getAQIStatus(aqi).status);
-        setDataWarning('');
-      } else {
-        setDataWarning(`Error fetching data: ${error.message}`);
-      }
+      setDataWarning(`Error fetching data: ${error.message}`);
     } finally {
       setLoading(false);
     }
@@ -154,11 +119,11 @@ const AirReport = () => {
   const createPollutantData = () => {
     const pollutants = ['CO2 (ppm)', 'NOx (ppb)', 'VOC (ppb)', 'Benzene (ppb)'];
     const values = ['co2', 'nox', 'voc', 'benzene'].map(pollutant => {
-      const relevantData = data.filter(item => 
+      const relevantData = data.filter(item =>
         item.measurement && typeof item.measurement === 'string' && item.measurement.toLowerCase().includes(pollutant)
       );
       if (relevantData.length > 0) {
-        const latest = relevantData.reduce((a, b) => 
+        const latest = relevantData.reduce((a, b) =>
           new Date(a._time) > new Date(b._time) ? a : b
         );
         return pollutant === 'nox' || pollutant === 'benzene' ? latest.value * 1000 : latest.value;
@@ -188,12 +153,12 @@ const AirReport = () => {
     };
   };
 
-  const chartOptions = {
+  const lineChartOptions = {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
-      legend: { position: 'top', labels: { color: 'white' } },
-      title: { display: true, color: 'white' },
+      legend: { display: false },
+      title: { display: false },
     },
     scales: {
       y: { beginAtZero: true, grid: { color: 'rgba(255, 255, 255, 0.1)' }, ticks: { color: 'white' } },
@@ -203,6 +168,20 @@ const AirReport = () => {
         grid: { color: 'rgba(255, 255, 255, 0.1)' },
         ticks: { color: 'white' }
       }
+    }
+  };
+
+  const barChartOptions = {
+    indexAxis: 'y',
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      title: { display: false },
+    },
+    scales: {
+      y: { grid: { color: 'rgba(255, 255, 255, 0.05)' }, ticks: { color: 'white' } },
+      x: { beginAtZero: true, grid: { color: 'rgba(255, 255, 255, 0.1)' }, ticks: { color: 'white' } }
     }
   };
 
@@ -358,18 +337,28 @@ const AirReport = () => {
           </div>
         </div>
         <div className="h-80">
-          <Line 
+          <Line
             data={{
               datasets: [{
                 label: 'AQI',
                 data: createHistoricalData(),
                 borderColor: 'rgba(16, 185, 129, 1)',
-                backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                backgroundColor: (context) => {
+                  const ctx = context.chart.ctx;
+                  if (!ctx) return 'rgba(16, 185, 129, 0.1)';
+                  const gradient = ctx.createLinearGradient(0, 0, 0, 250);
+                  gradient.addColorStop(0, 'rgba(16, 185, 129, 0.5)');
+                  gradient.addColorStop(1, 'rgba(16, 185, 129, 0)');
+                  return gradient;
+                },
                 tension: 0.4,
-                fill: true
+                fill: true,
+                pointRadius: 1,
+                pointHoverRadius: 5,
+                pointBackgroundColor: 'rgba(16, 185, 129, 1)'
               }]
             }}
-            options={chartOptions}
+            options={lineChartOptions}
           />
         </div>
       </div>
@@ -377,15 +366,9 @@ const AirReport = () => {
       <div className="glass-card rounded-xl p-6">
         <h2 className="text-2xl font-bold text-white mb-4">Current Pollutant Levels</h2>
         <div className="h-80">
-          <Bar 
+          <Bar
             data={createPollutantData()}
-            options={{
-              ...chartOptions,
-              scales: {
-                y: { beginAtZero: true, grid: { color: 'rgba(255, 255, 255, 0.1)' }, ticks: { color: 'white' } },
-                x: { grid: { color: 'rgba(255, 255, 255, 0.1)' }, ticks: { color: 'white' } }
-              }
-            }}
+            options={barChartOptions}
           />
         </div>
       </div>

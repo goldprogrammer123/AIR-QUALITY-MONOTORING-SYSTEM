@@ -23,36 +23,43 @@ const Dashboard = () => {
   const fetchDataPage = async (pageNum) => {
     setLoading(true);
     try {
-      const cacheKey =`dashboard_page_${pageNum}` ;
-      const result = await fetchWithCache(`http://localhost:3000/influx?page=${pageNum}&limit=${PAGE_LIMIT}`
-        ,
+      const cacheKey = `dashboard_page_${pageNum}`;
+      const result = await fetchWithCache(
+        `/api/sensordata/?format=json`,
         cacheKey
       );
 
-      // Process data values for consistency (round value)
-      const processedData = result.data.map((item) => ({
-        id: item.id,
-        measurement: item.measurement,
-        value: typeof item.value === "number" ? Number(item.value.toFixed(6)) : item.value,
-        _time: item._time,
-      }));
+      // The API returns an array directly, not an object with a 'data' property.
+      const processedData = (result || []).flatMap((item) =>
+        (item.measurements || []).map((measurement) => ({
+          id: item.device_id,
+          measurement: measurement.name,
+          value:
+            typeof measurement.value === "number"
+              ? Number(measurement.value.toFixed(6))
+              : measurement.value,
+          _time: item.received_at,
+        }))
+      );
 
       // Deduplicate based on _time and measurement
       const uniqueData = processedData.filter((item) => {
         const key = `${item._time}-${item.measurement}`;
-        return !allData.some((prevItem) => `${prevItem._time}-${prevItem.measurement}` === key);
+        return !allData.some(
+          (prevItem) => `${prevItem._time}-${prevItem.measurement}` === key
+        );
       });
 
       setAllData((prev) => [...prev, ...uniqueData]);
 
       // Update device IDs after new data loaded
-      const uniqueDevices = [...new Set([...allData, ...uniqueData].map((item) => item.id))];
+      const uniqueDevices = [
+        ...new Set([...allData, ...uniqueData].map((item) => item.id)),
+      ];
       setDeviceIds(uniqueDevices);
 
-      // Determine if more pages exist
-      if (allData.length + uniqueData.length >= result.total) {
-        setHasMore(false);
-      }
+      // Since the API doesn't provide pagination info, we'll assume there's more data if we received a full page.
+      setHasMore(processedData.length === PAGE_LIMIT);
     } catch (error) {
       console.error("Error fetching data:", error);
     } finally {

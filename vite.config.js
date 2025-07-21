@@ -8,11 +8,10 @@ export default defineConfig({
   ],
   server: {
     proxy: {
-      // Proxy requests starting with /influx to the backend
-      '/influx': {
-        target: 'http://localhost:3000', // Your backend server
-        changeOrigin: true, // Changes the origin of the request to match the target
-        rewrite: (path) => path.replace(/^\/influx/, '/influx') // Ensure the path is preserved
+      '/api': {
+        target: 'https://ttn-postgres-1.onrender.com',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, '/api')
       }
     }
   }
