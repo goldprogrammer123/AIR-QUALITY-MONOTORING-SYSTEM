@@ -27,64 +27,34 @@ const Location = () => {
     setLoading(true);
     setError(null);
     try {
-      // Fetch device data from your backend
-      const result = await fetchWithCache("https://ttn-postgres-1.onrender.com/api/sensordata/?format=json", "latitude,longitude");
+      // Fetch device data from your backend (new API structure)
+      const result = await fetchWithCache("/api/sensordata/?format=json", "sensor_locations");
       
-      // Process the data to extract unique devices and their latest readings
-      const deviceMap = new Map();
+      // Hardcoded coordinates for Ardhi University
+      const hardcodedCoordinates = { lat: -6.7650985, lng: 39.2132128 };
       
-      result.data.forEach((item) => {
-        if (!deviceMap.has(item.id)) {
-          deviceMap.set(item.id, {
-            id: item.id,
-            name: `Air Quality Sensor ${item.id}`,
-            location: `Location ${item.id}`, // This should come from your device metadata
-            coordinates: getDefaultCoordinates(item.id), // This should come from your device metadata
-            status: "online", // This should be determined by last reading time
-            lastReading: new Date(item._time).toLocaleString(),
-            airQuality: getAirQualityFromValue(item.value, item.measurement),
-            battery: getBatteryLevel(item.id), // This should come from your device metadata
-            measurements: []
-          });
+      // Process the data to extract devices (all with the same hardcoded coordinates)
+      const sensorArray = (result || []).map((item) => {
+        let battery = null;
+        let airQuality = "Unknown";
+        if (item.measurements && Array.isArray(item.measurements)) {
+          for (const m of item.measurements) {
+            if (m.name && m.name.toLowerCase() === "batterypercentage") battery = m.value;
+            if (m.name && m.name.toLowerCase().includes("airquality")) airQuality = m.value;
+          }
         }
-        
-        const device = deviceMap.get(item.id);
-        device.measurements.push({
-          type: item.measurement,
-          value: item.value,
-          time: item._time
-        });
-        
-        // Update last reading time
-        const itemTime = new Date(item._time);
-        const deviceTime = new Date(device.lastReading);
-        if (itemTime > deviceTime) {
-          device.lastReading = itemTime.toLocaleString();
-          device.airQuality = getAirQualityFromValue(item.value, item.measurement);
-        }
-      });
-
-      // Convert map to array and determine status based on last reading
-      const sensorArray = Array.from(deviceMap.values()).map(device => {
-        const lastReadingTime = new Date(device.measurements[0]?.time || device.lastReading);
-        const now = new Date();
-        const timeDiff = now - lastReadingTime;
-        
-        // Determine status based on last reading time
-        let status = "online";
-        if (timeDiff > 30 * 60 * 1000) { // 30 minutes
-          status = "offline";
-        } else if (timeDiff > 10 * 60 * 1000) { // 10 minutes
-          status = "maintenance";
-        }
-
         return {
-          ...device,
-          status,
-          lastReading: formatTimeAgo(lastReadingTime)
+          id: item.device_id,
+          name: `Air Quality Sensor ${item.device_id}`,
+          location: `Device ${item.device_id}`,
+          coordinates: hardcodedCoordinates,
+          status: "online", // You can improve this logic
+          lastReading: item.received_at ? new Date(item.received_at).toLocaleString() : "N/A",
+          airQuality: airQuality,
+          battery: battery !== null ? Math.round(battery) : 100,
+          measurements: item.measurements || []
         };
       });
-
       setSensors(sensorArray);
     } catch (error) {
       console.error("Error fetching sensor data:", error);

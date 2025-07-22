@@ -17,6 +17,7 @@ const MainLayout = () => {
         </div>
       </div>
     </div>
+  
   );
 };
 
