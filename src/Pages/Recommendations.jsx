@@ -183,11 +183,11 @@ const Recommendations = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen text-white">
+      <div className="min-h-screen text-black">
         <div className="glass-card rounded-xl p-6">
           <div className="flex flex-col items-center py-12">
             <span className="mb-4 text-emerald-400 font-semibold text-lg">Loading recommendations...</span>
-            <div className="w-1/2 h-3 bg-white/10 rounded-full overflow-hidden">
+            <div className="w-1/2 h-3 bg-black/10 rounded-full overflow-hidden">
               <div
                 className="h-full w-2/5 bg-gradient-to-r from-emerald-400 to-emerald-600 rounded-full animate-pulse"
                 style={{ animation: 'loadingBarMove 1.5s linear infinite' }}
@@ -200,16 +200,16 @@ const Recommendations = () => {
   }
 
   return (
-    <div className="min-h-screen text-white">
-      <div className="glass-card rounded-xl p-6 mb-6">
-        <div className="flex items-center justify-between mb-4">
+    <div className="min-h-screen text-black">
+      <div className="bg-white shadow-2xl rounded-xl p-6 mb-6">
+        <div className="bg-white flex items-center justify-between mb-4">
           <div>
-            <h1 className="text-3xl font-bold text-white mb-2">Health Recommendations</h1>
-            <p className="text-white/70">Personalized recommendations based on current air quality conditions</p>
+            <h1 className="text-3xl font-bold text-black mb-2">Health Recommendations</h1>
+            <p className="text-black/70">Personalized recommendations based on current air quality conditions</p>
           </div>
           <button
             onClick={fetchData}
-            className="glass-button px-6 py-3 rounded-xl text-white font-medium"
+            className="glass-button px-6 py-3 rounded-xl text-black font-medium"
           >
             Refresh Data
           </button>
@@ -217,7 +217,7 @@ const Recommendations = () => {
       </div>
 
       {dataWarning && (
-        <div className="glass-card rounded-xl p-6 mb-6 bg-red-500/20">
+        <div className="bg-white rounded-2xl p-6 mb-6 bg-red-500/20">
           <div className="flex items-center space-x-3">
             <AlertTriangle className="w-6 h-6 text-red-400" />
             <span className="text-red-400">{dataWarning}</span>
@@ -225,7 +225,7 @@ const Recommendations = () => {
         </div>
       )}
 
-      <div className="glass-card rounded-xl p-6 mb-6">
+      <div className="bg-white shadow-2xl rounded-xl p-6 mb-6">
         <div className={`${aqiStatusInfo.color} rounded-xl p-6 mb-6`}>
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
@@ -248,87 +248,89 @@ const Recommendations = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="recommendation-card p-6">
+        <div className=" p-6 shadow-2xl bg-white rounded-xl">
           <div className="flex items-center space-x-3 mb-4">
             <Shield className="w-6 h-6 text-emerald-400" />
-            <h3 className="text-xl font-semibold text-white">General Public</h3>
+            <h3 className="text-xl font-semibold text-black">General Public</h3>
           </div>
           <ul className="space-y-3">
             {recommendations.general.map((rec, index) => (
               <li key={index} className="flex items-start space-x-3">
                 <CheckCircle className="w-5 h-5 text-emerald-400 mt-0.5 flex-shrink-0" />
-                <span className="text-white/90">{rec}</span>
+                <span className="text-black/90">{rec}</span>
               </li>
             ))}
           </ul>
         </div>
 
-        <div className="recommendation-card p-6">
+        <div className=" p-6 shadow-2xl bg-white rounded-xl">
           <div className="flex items-center space-x-3 mb-4">
             <Heart className="w-6 h-6 text-red-400" />
-            <h3 className="text-xl font-semibold text-white">Sensitive Groups</h3>
+            <h3 className="text-xl font-semibold text-black">Sensitive Groups</h3>
           </div>
-          <div className="mb-4">
-            <p className="text-white/70 text-sm mb-2">Includes:</p>
-            <div className="flex flex-wrap gap-2">
-              <span className="bg-red-500/20 text-red-300 px-2 py-1 rounded text-xs">Heart Disease</span>
-              <span className="bg-red-500/20 text-red-300 px-2 py-1 rounded text-xs">Lung Disease</span>
-              <span className="bg-red-500/20 text-red-300 px-2 py-1 rounded text-xs">Older Adults</span>
-              <span className="bg-red-500/20 text-red-300 px-2 py-1 rounded text-xs">Children</span>
-            </div>
+          <div className="mb-4"> 
+             <p className="text-black text-sm mb-2 font-semibold">Includes:</p>
+           <div className="flex flex-wrap gap-2">
+             <span className="bg-red-500/20 text-red-600 px-2 py-1 rounded text-xs font-bold">Heart Disease</span>
+             <span className="bg-red-500/20 text-red-600 px-2 py-1 rounded text-xs font-bold">Lung Disease</span>
+             <span className="bg-red-500/20 text-red-600 px-2 py-1 rounded text-xs font-bold">Older Adults</span>
+             <span className="bg-red-500/20 text-red-600 px-2 py-1 rounded text-xs font-bold">Children</span>
+           </div>
           </div>
+
           <ul className="space-y-3">
             {recommendations.sensitive.map((rec, index) => (
               <li key={index} className="flex items-start space-x-3">
                 <AlertTriangle className="w-5 h-5 text-red-400 mt-0.5 flex-shrink-0" />
-                <span className="text-white/90">{rec}</span>
+                <span className="text-black/90">{rec}</span>
               </li>
             ))}
           </ul>
         </div>
 
-        <div className="recommendation-card p-6">
+        <div className=" p-6 shadow-2xl bg-white rounded-xl">
           <div className="flex items-center space-x-3 mb-4">
             <Activity className="w-6 h-6 text-yellow-400" />
-            <h3 className="text-xl font-semibold text-white">Outdoor Activities</h3>
+            <h3 className="text-xl font-semibold text-black">Outdoor Activities</h3>
           </div>
           <ul className="space-y-3">
             {recommendations.outdoor.map((rec, index) => (
               <li key={index} className="flex items-start space-x-3">
                 <CheckCircle className="w-5 h-5 text-yellow-400 mt-0.5 flex-shrink-0" />
-                <span className="text-white/90">{rec}</span>
+                <span className="text-black/90">{rec}</span>
               </li>
             ))}
           </ul>
         </div>
       </div>
 
-      <div className="glass-card rounded-xl p-6 mt-6">
-        <h2 className="text-2xl font-bold text-white mb-4">AQI Scale Reference</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="bg-white rounded-xl shadow-2xl p-6 mt-6 ">
+        <h2 className="text-2xl font-bold text-black mb-4">AQI Scale Reference</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 bg-white">
           <div className="flex items-center justify-between p-3 bg-emerald-500/20 rounded-lg">
-            <span className="text-emerald-400 font-semibold">0-50</span>
-            <span className="text-white">Good</span>
+            <span className="text-black font-semibold">0-50</span>
+            <span className="text-black font-semibold">Good</span>
           </div>
+
           <div className="flex items-center justify-between p-3 bg-yellow-500/20 rounded-lg">
-            <span className="text-yellow-400 font-semibold">51-100</span>
-            <span className="text-white">Moderate</span>
+            <span className="text-black font-semibold">51-100</span>
+            <span className="text-black font-semibold">Moderate</span>
           </div>
           <div className="flex items-center justify-between p-3 bg-orange-500/20 rounded-lg">
-            <span className="text-orange-400 font-semibold">101-150</span>
-            <span className="text-white">Unhealthy for Sensitive Groups</span>
+            <span className="text-black font-semibold">101-150</span>
+            <span className="text-black font-semibold">Unhealthy for Sensitive Groups</span>
           </div>
           <div className="flex items-center justify-between p-3 bg-red-500/20 rounded-lg">
-            <span className="text-red-400 font-semibold">151-200</span>
-            <span className="text-white">Unhealthy</span>
+            <span className="text-black font-semibold">151-200</span>
+            <span className="text-black font-semibold">Unhealthy</span>
           </div>
           <div className="flex items-center justify-between p-3 bg-purple-500/20 rounded-lg">
-            <span className="text-purple-400 font-semibold">201-300</span>
-            <span className="text-white">Very Unhealthy</span>
+            <span className="text-black font-semibold">201-300</span>
+            <span className="text-black font-semibold">Very Unhealthy</span>
           </div>
           <div className="flex items-center justify-between p-3 bg-red-800/20 rounded-lg">
-            <span className="text-red-800 font-semibold">301+</span>
-            <span className="text-white">Hazardous</span>
+            <span className="text-black font-semibold">301+</span>
+            <span className="text-black font-semibold">Hazardous</span>
           </div>
         </div>
       </div>

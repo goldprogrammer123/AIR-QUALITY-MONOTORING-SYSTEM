@@ -28,7 +28,7 @@ const Location = () => {
     setError(null);
     try {
       // Fetch device data from your backend
-      const result = await fetchWithCache("https://ttn-postgres-1.onrender.com/api/sensordata/?format=json", "location_sensors");
+      const result = await fetchWithCache("https://ttn-postgres-1.onrender.com/api/sensordata/?format=json", "latitude,longitude");
       
       // Process the data to extract unique devices and their latest readings
       const deviceMap = new Map();
@@ -208,11 +208,11 @@ const Location = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen text-white">
+      <div className="min-h-screen text-black">
         <div className="glass-card rounded-xl p-6">
           <div className="flex flex-col items-center py-12">
             <span className="mb-4 text-emerald-400 font-semibold text-lg">Loading sensor locations...</span>
-            <div className="w-1/2 h-3 bg-white/10 rounded-full overflow-hidden">
+            <div className="w-1/2 h-3 bg-black/10 rounded-full overflow-hidden">
               <div
                 className="h-full w-2/5 bg-gradient-to-r from-emerald-400 to-emerald-600 rounded-full animate-pulse"
                 style={{
@@ -228,15 +228,15 @@ const Location = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen text-white">
+      <div className="min-h-screen text-black">
         <div className="glass-card rounded-xl p-6">
           <div className="text-center py-12">
             <AlertCircle className="w-16 h-16 text-red-400 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold text-white mb-2">Error Loading Data</h2>
-            <p className="text-white/70 mb-6">{error}</p>
+            <h2 className="text-2xl font-bold text-black mb-2">Error Loading Data</h2>
+            <p className="text-black/70 mb-6">{error}</p>
             <button
               onClick={fetchSensorData}
-              className="glass-button px-6 py-3 rounded-xl text-white font-medium"
+              className="glass-button px-6 py-3 rounded-xl text-black font-medium"
             >
               Try Again
             </button>
@@ -247,16 +247,16 @@ const Location = () => {
   }
 
   return (
-    <div className="min-h-screen text-white">
+    <div className="min-h-screen text-black">
       <div className="glass-card rounded-xl p-6 mb-6">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-3xl font-bold mb-2 text-white">Sensor Locations</h1>
-            <p className="text-white/70">Monitor the physical locations and status of all air quality sensors across the campus.</p>
+            <h1 className="text-3xl font-bold mb-2 text-black">Sensor Locations</h1>
+            <p className="text-black/70">Monitor the physical locations and status of all air quality sensors across the campus.</p>
           </div>
           <button
             onClick={fetchSensorData}
-            className="glass-button px-4 py-2 rounded-lg text-white text-sm"
+            className="glass-button px-4 py-2 rounded-lg text-black text-sm"
           >
             Refresh
           </button>
@@ -267,8 +267,8 @@ const Location = () => {
         <div className="glass-card rounded-xl p-6">
           <div className="text-center py-12">
             <MapPin className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold text-white mb-2">No Sensors Found</h2>
-            <p className="text-white/70">No sensor data is currently available.</p>
+            <h2 className="text-2xl font-bold text-black mb-2">No Sensors Found</h2>
+            <p className="text-black/70">No sensor data is currently available.</p>
           </div>
         </div>
       ) : (
@@ -277,7 +277,7 @@ const Location = () => {
             {/* Map Section */}
             <div className="lg:col-span-2">
               <div className="glass-card rounded-xl p-6 h-96">
-                <h2 className="text-xl font-semibold mb-4 text-white">Campus Map</h2>
+                <h2 className="text-xl font-semibold mb-4 text-black">Campus Map</h2>
                 <MapContainer
                   center={[-6.8235, 39.2695]}
                   zoom={15}
@@ -318,7 +318,7 @@ const Location = () => {
             {/* Sensor List */}
             <div className="lg:col-span-1">
               <div className="glass-card rounded-xl p-6">
-                <h2 className="text-xl font-semibold mb-4 text-white">Sensor Status ({sensors.length})</h2>
+                <h2 className="text-xl font-semibold mb-4 text-black">Sensor Status ({sensors.length})</h2>
                 <div className="space-y-4 max-h-80 overflow-y-auto">
                   {sensors.map((sensor) => (
                     <div
@@ -329,38 +329,38 @@ const Location = () => {
                       onClick={() => setSelectedSensor(sensor)}
                     >
                       <div className="flex items-center justify-between mb-2">
-                        <h3 className="font-semibold text-white">{sensor.name}</h3>
+                        <h3 className="font-semibold text-black">{sensor.name}</h3>
                         {getStatusIcon(sensor.status)}
                       </div>
                       
                       <div className="space-y-2 text-sm">
                         <div className="flex items-center space-x-2">
                           <MapPin className="w-4 h-4 text-emerald-400" />
-                          <span className="text-white/80">{sensor.location}</span>
+                          <span className="text-black/80">{sensor.location}</span>
                         </div>
                         
                         <div className="flex items-center justify-between">
-                          <span className="text-white/60">Status:</span>
+                          <span className="text-black/60">Status:</span>
                           <span className={`font-medium ${getStatusColor(sensor.status)}`}>
                             {sensor.status.charAt(0).toUpperCase() + sensor.status.slice(1)}
                           </span>
                         </div>
                         
                         <div className="flex items-center justify-between">
-                          <span className="text-white/60">Air Quality:</span>
+                          <span className="text-black/60">Air Quality:</span>
                           <span className={`font-medium ${getAirQualityColor(sensor.airQuality)}`}>
                             {sensor.airQuality}
                           </span>
                         </div>
                         
                         <div className="flex items-center justify-between">
-                          <span className="text-white/60">Battery:</span>
-                          <span className="text-white/80">{sensor.battery}%</span>
+                          <span className="text-black/60">Battery:</span>
+                          <span className="text-black/80">{sensor.battery}%</span>
                         </div>
                         
                         <div className="flex items-center justify-between">
-                          <span className="text-white/60">Last Reading:</span>
-                          <span className="text-white/80">{sensor.lastReading}</span>
+                          <span className="text-black/60">Last Reading:</span>
+                          <span className="text-black/80">{sensor.lastReading}</span>
                         </div>
                       </div>
                     </div>
@@ -375,10 +375,10 @@ const Location = () => {
             <div className="mt-6">
               <div className="glass-card rounded-xl p-6">
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-2xl font-bold text-white">Sensor Details</h2>
+                  <h2 className="text-2xl font-bold text-black">Sensor Details</h2>
                   <button
                     onClick={() => setSelectedSensor(null)}
-                    className="glass-button px-4 py-2 rounded-lg text-white text-sm"
+                    className="glass-button px-4 py-2 rounded-lg text-black text-sm"
                   >
                     Close
                   </button>
@@ -386,29 +386,29 @@ const Location = () => {
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <h3 className="text-lg font-semibold text-white mb-3">Basic Information</h3>
+                    <h3 className="text-lg font-semibold text-black mb-3">Basic Information</h3>
                     <div className="space-y-3">
                       <div>
-                        <span className="text-white/60">Sensor ID:</span>
-                        <span className="text-white ml-2 font-medium">{selectedSensor.id}</span>
+                        <span className="text-black/60">Sensor ID:</span>
+                        <span className="text-black ml-2 font-medium">{selectedSensor.id}</span>
                       </div>
                       <div>
-                        <span className="text-white/60">Name:</span>
-                        <span className="text-white ml-2 font-medium">{selectedSensor.name}</span>
+                        <span className="text-black/60">Name:</span>
+                        <span className="text-black ml-2 font-medium">{selectedSensor.name}</span>
                       </div>
                       <div>
-                        <span className="text-white/60">Location:</span>
-                        <span className="text-white ml-2 font-medium">{selectedSensor.location}</span>
+                        <span className="text-black/60">Location:</span>
+                        <span className="text-black ml-2 font-medium">{selectedSensor.location}</span>
                       </div>
                       <div>
-                        <span className="text-white/60">Coordinates:</span>
-                        <span className="text-white ml-2 font-medium">
+                        <span className="text-black/60">Coordinates:</span>
+                        <span className="text-black ml-2 font-medium">
                           {selectedSensor.coordinates.lat.toFixed(4)}, {selectedSensor.coordinates.lng.toFixed(4)}
                         </span>
                       </div>
                       <div>
-                        <span className="text-white/60">Measurements:</span>
-                        <span className="text-white ml-2 font-medium">
+                        <span className="text-black/60">Measurements:</span>
+                        <span className="text-black ml-2 font-medium">
                           {selectedSensor.measurements.length} types
                         </span>
                       </div>
@@ -416,10 +416,10 @@ const Location = () => {
                   </div>
                   
                   <div>
-                    <h3 className="text-lg font-semibold text-white mb-3">Current Status</h3>
+                    <h3 className="text-lg font-semibold text-black mb-3">Current Status</h3>
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
-                        <span className="text-white/60">Status:</span>
+                        <span className="text-black/60">Status:</span>
                         <div className="flex items-center space-x-2">
                           {getStatusIcon(selectedSensor.status)}
                           <span className={`font-medium ${getStatusColor(selectedSensor.status)}`}>
@@ -428,15 +428,15 @@ const Location = () => {
                         </div>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="text-white/60">Air Quality:</span>
+                        <span className="text-black/60">Air Quality:</span>
                         <span className={`font-medium ${getAirQualityColor(selectedSensor.airQuality)}`}>
                           {selectedSensor.airQuality}
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="text-white/60">Battery Level:</span>
+                        <span className="text-black/60">Battery Level:</span>
                         <div className="flex items-center space-x-2">
-                          <div className="w-20 h-2 bg-white/20 rounded-full overflow-hidden">
+                          <div className="w-20 h-2 bg-black/20 rounded-full overflow-hidden">
                             <div 
                               className={`h-full rounded-full ${
                                 selectedSensor.battery > 50 ? 'bg-emerald-400' : 
@@ -445,12 +445,12 @@ const Location = () => {
                               style={{ width: `${selectedSensor.battery}%` }}
                             ></div>
                           </div>
-                          <span className="text-white/80 text-sm">{selectedSensor.battery}%</span>
+                          <span className="text-black/80 text-sm">{selectedSensor.battery}%</span>
                         </div>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="text-white/60">Last Reading:</span>
-                        <span className="text-white/80">{selectedSensor.lastReading}</span>
+                        <span className="text-black/60">Last Reading:</span>
+                        <span className="text-black/80">{selectedSensor.lastReading}</span>
                       </div>
                     </div>
                   </div>
@@ -459,22 +459,22 @@ const Location = () => {
                 {/* Recent Measurements */}
                 {selectedSensor.measurements.length > 0 && (
                   <div className="mt-6">
-                    <h3 className="text-lg font-semibold text-white mb-3">Recent Measurements</h3>
+                    <h3 className="text-lg font-semibold text-black mb-3">Recent Measurements</h3>
                     <div className="overflow-x-auto">
                       <table className="min-w-full border-collapse glass-table rounded-xl">
                         <thead className="sticky top-0">
                           <tr>
-                            <th className="border p-3 text-left text-white font-semibold">Type</th>
-                            <th className="border p-3 text-left text-white font-semibold">Value</th>
-                            <th className="border p-3 text-left text-white font-semibold">Time</th>
+                            <th className="border p-3 text-left text-black font-semibold">Type</th>
+                            <th className="border p-3 text-left text-black font-semibold">Value</th>
+                            <th className="border p-3 text-left text-black font-semibold">Time</th>
                           </tr>
                         </thead>
                         <tbody>
                           {selectedSensor.measurements.slice(0, 5).map((measurement, idx) => (
                             <tr key={idx} className="border hover:bg-emerald-500/10 transition-colors">
-                              <td className="border p-3 text-white">{measurement.type}</td>
-                              <td className="border p-3 text-white">{measurement.value}</td>
-                              <td className="border p-3 text-white">
+                              <td className="border p-3 text-black">{measurement.type}</td>
+                              <td className="border p-3 text-black">{measurement.value}</td>
+                              <td className="border p-3 text-black">
                                 {new Date(measurement.time).toLocaleString()}
                               </td>
                             </tr>

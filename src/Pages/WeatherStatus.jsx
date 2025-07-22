@@ -126,11 +126,11 @@ const WeatherStatus = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen text-white">
+      <div className="min-h-screen text-black">
         <div className="glass-card rounded-xl p-6">
           <div className="flex flex-col items-center py-12">
             <span className="mb-4 text-emerald-400 font-semibold text-lg">Loading weather data...</span>
-            <div className="w-1/2 h-3 bg-white/10 rounded-full overflow-hidden">
+            <div className="w-1/2 h-3 bg-black/10 rounded-full overflow-hidden">
               <div
                 className="h-full w-2/5 bg-gradient-to-r from-emerald-400 to-emerald-600 rounded-full animate-pulse"
                 style={{ animation: 'loadingBarMove 1.5s linear infinite' }}
@@ -145,17 +145,17 @@ const WeatherStatus = () => {
   const weatherCondition = getWeatherCondition(weatherData.temperature, weatherData.humidity);
 
   return (
-    <div className="min-h-screen text-white">
+    <div className="min-h-screen text-black">
       {/* Header */}
       <div className="glass-card rounded-xl p-6 mb-6">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h1 className="text-3xl font-bold text-white mb-2">Weather Status</h1>
-            <p className="text-white/70">Current weather conditions and their impact on air quality</p>
+            <h1 className="text-3xl font-bold text-black mb-2">Weather Status</h1>
+            <p className="text-black/70">Current weather conditions and their impact on air quality</p>
           </div>
           <button
             onClick={fetchData}
-            className="glass-button px-6 py-3 rounded-xl text-white font-medium"
+            className="glass-button px-6 py-3 rounded-xl text-black font-medium"
           >
             Refresh Data
           </button>
@@ -163,54 +163,54 @@ const WeatherStatus = () => {
       </div>
 
       {/* Current Weather */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-        <div className="lg:col-span-2">
+      <div className="grid grid-cols-1 bg-white shadow-2xl rounded-lg lg:grid-cols-3 gap-6 mb-6">
+        <div className="lg:col-span-2 ">
           <div className="weather-card p-6">
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center space-x-4">
                 {getWeatherIcon(weatherCondition)}
                 <div>
-                  <h2 className="text-3xl font-bold text-white">{weatherData.temperature}°C</h2>
-                  <p className="text-white/70 capitalize">{weatherCondition} conditions</p>
+                  <h2 className="text-3xl font-bold text-black">{weatherData.temperature}°C</h2>
+                  <p className="text-black/70 capitalize">{weatherCondition} conditions</p>
                 </div>
               </div>
               <div className="text-right">
-                <p className="text-sm text-white/60">Last Updated</p>
-                <p className="text-white">{new Date().toLocaleString()}</p>
+                <p className="text-sm text-black/60">Last Updated</p>
+                <p className="text-black">{new Date().toLocaleString()}</p>
               </div>
             </div>
             
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="text-center">
+              <div className="text-center glass-card rounded-xl p-4">
                 <div className="flex items-center justify-center mb-2">
                   <Droplets className="w-6 h-6 text-blue-400" />
                 </div>
-                <p className="text-2xl font-bold text-white">{weatherData.humidity}%</p>
-                <p className="text-sm text-white/60">Humidity</p>
+                <p className="text-2xl font-bold text-black">{weatherData.humidity}%</p>
+                <p className="text-sm text-black/60">Humidity</p>
               </div>
               
-              <div className="text-center">
+              <div className="text-center  glass-card rounded-xl p-4">
                 <div className="flex items-center justify-center mb-2">
                   <Gauge className="w-6 h-6 text-purple-400" />
                 </div>
-                <p className="text-2xl font-bold text-white">{weatherData.pressure} hPa</p>
-                <p className="text-sm text-white/60">Pressure</p>
+                <p className="text-2xl font-bold text-black">{weatherData.pressure} hPa</p>
+                <p className="text-sm text-black/60">Pressure</p>
               </div>
               
-              <div className="text-center">
+              <div className="text-center glass-card rounded-xl p-4">
                 <div className="flex items-center justify-center mb-2">
                   <Wind className="w-6 h-6 text-gray-400" />
                 </div>
-                <p className="text-2xl font-bold text-white">{weatherData.windSpeed} m/s</p>
-                <p className="text-sm text-white/60">Wind Speed</p>
+                <p className="text-2xl font-bold text-black">{weatherData.windSpeed} m/s</p>
+                <p className="text-sm text-black/60">Wind Speed</p>
               </div>
               
-              <div className="text-center">
+              <div className="text-center glass-card rounded-xl p-4">
                 <div className="flex items-center justify-center mb-2">
                   <Eye className="w-6 h-6 text-cyan-400" />
                 </div>
-                <p className="text-2xl font-bold text-white">{weatherData.visibility} km</p>
-                <p className="text-sm text-white/60">Visibility</p>
+                <p className="text-2xl font-bold text-black">{weatherData.visibility} km</p>
+                <p className="text-sm text-black/60">Visibility</p>
               </div>
             </div>
           </div>
@@ -218,27 +218,27 @@ const WeatherStatus = () => {
 
         <div className="lg:col-span-1">
           <div className="glass-card rounded-xl p-6">
-            <h3 className="text-xl font-semibold mb-4 text-white">Weather Summary</h3>
+            <h3 className="text-xl font-semibold mb-4 text-black">Weather Summary</h3>
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <span className="text-white/70">Temperature:</span>
-                <span className="text-white font-medium">{weatherData.temperature}°C</span>
+                <span className="text-black/70">Temperature:</span>
+                <span className="text-black font-medium">{weatherData.temperature}°C</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-white/70">Humidity:</span>
-                <span className="text-white font-medium">{weatherData.humidity}%</span>
+                <span className="text-black/70">Humidity:</span>
+                <span className="text-black font-medium">{weatherData.humidity}%</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-white/70">Pressure:</span>
-                <span className="text-white font-medium">{weatherData.pressure} hPa</span>
+                <span className="text-black/70">Pressure:</span>
+                <span className="text-black font-medium">{weatherData.pressure} hPa</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-white/70">Wind Speed:</span>
-                <span className="text-white font-medium">{weatherData.windSpeed} m/s</span>
+                <span className="text-black/70">Wind Speed:</span>
+                <span className="text-black font-medium">{weatherData.windSpeed} m/s</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-white/70">Visibility:</span>
-                <span className="text-white font-medium">{weatherData.visibility} km</span>
+                <span className="text-black/70">Visibility:</span>
+                <span className="text-black font-medium">{weatherData.visibility} km</span>
               </div>
             </div>
           </div>
@@ -247,13 +247,13 @@ const WeatherStatus = () => {
 
       {/* Weather Impact on Air Quality */}
       <div className="glass-card rounded-xl p-6 mb-6">
-        <h2 className="text-2xl font-bold text-white mb-6">Weather Impact on Air Quality</h2>
+        <h2 className="text-2xl font-bold text-black mb-6">Weather Impact on Air Quality</h2>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* PM2.5 Impact */}
           <div className="recommendation-card p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-white">PM2.5 Impact</h3>
+              <h3 className="text-lg font-semibold text-black">PM2.5 Impact</h3>
               {getImpactIcon(impact.pm25Impact)}
             </div>
             <div className={`text-center p-4 rounded-lg ${
@@ -267,7 +267,7 @@ const WeatherStatus = () => {
                 {getImpactText(impact.pm25Impact)}
               </p>
             </div>
-            <div className="mt-4 space-y-2 text-sm text-white/80">
+            <div className="mt-4 space-y-2 text-sm text-black/80">
               {impact.pm25Impact === 'positive' && (
                 <>
                   <p>• Lower temperatures reduce PM2.5 formation</p>
@@ -289,7 +289,7 @@ const WeatherStatus = () => {
           {/* PM10 Impact */}
           <div className="recommendation-card p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-white">PM10 Impact</h3>
+              <h3 className="text-lg font-semibold text-black">PM10 Impact</h3>
               {getImpactIcon(impact.pm10Impact)}
             </div>
             <div className={`text-center p-4 rounded-lg ${
@@ -303,7 +303,7 @@ const WeatherStatus = () => {
                 {getImpactText(impact.pm10Impact)}
               </p>
             </div>
-            <div className="mt-4 space-y-2 text-sm text-white/80">
+            <div className="mt-4 space-y-2 text-sm text-black/80">
               {impact.pm10Impact === 'positive' && (
                 <>
                   <p>• Cooler temperatures reduce dust</p>
@@ -325,7 +325,7 @@ const WeatherStatus = () => {
           {/* Dispersion */}
           <div className="recommendation-card p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-white">Dispersion</h3>
+              <h3 className="text-lg font-semibold text-black">Dispersion</h3>
               {getImpactIcon(impact.dispersion)}
             </div>
             <div className={`text-center p-4 rounded-lg ${
@@ -339,7 +339,7 @@ const WeatherStatus = () => {
                 {getImpactText(impact.dispersion)}
               </p>
             </div>
-            <div className="mt-4 space-y-2 text-sm text-white/80">
+            <div className="mt-4 space-y-2 text-sm text-black/80">
               {impact.dispersion === 'positive' && (
                 <>
                   <p>• Strong winds disperse pollutants</p>
@@ -362,77 +362,77 @@ const WeatherStatus = () => {
 
       {/* Weather Recommendations */}
       <div className="glass-card rounded-xl p-6">
-        <h2 className="text-2xl font-bold text-white mb-6">Weather-Based Recommendations</h2>
+        <h2 className="text-2xl font-bold text-black mb-6">Weather-Based Recommendations</h2>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="recommendation-card p-6">
-            <h3 className="text-lg font-semibold text-white mb-4">For High Temperature (&gt;30°C)</h3>
+            <h3 className="text-lg font-semibold text-black mb-4">For High Temperature (&gt;30°C)</h3>
             <ul className="space-y-3">
               <li className="flex items-start space-x-3">
                 <CheckCircle className="w-5 h-5 text-emerald-400 mt-0.5" />
-                <span className="text-white/90">Stay indoors during peak hours (10 AM - 4 PM)</span>
+                <span className="text-black/90">Stay indoors during peak hours (10 AM - 4 PM)</span>
               </li>
               <li className="flex items-start space-x-3">
                 <CheckCircle className="w-5 h-5 text-emerald-400 mt-0.5" />
-                <span className="text-white/90">Use air conditioning to maintain indoor air quality</span>
+                <span className="text-black/90">Use air conditioning to maintain indoor air quality</span>
               </li>
               <li className="flex items-start space-x-3">
                 <CheckCircle className="w-5 h-5 text-emerald-400 mt-0.5" />
-                <span className="text-white/90">Stay hydrated to help your body cope with poor air quality</span>
+                <span className="text-black/90">Stay hydrated to help your body cope with poor air quality</span>
               </li>
             </ul>
           </div>
 
           <div className="recommendation-card p-6">
-            <h3 className="text-lg font-semibold text-white mb-4">For High Humidity (&gt;70%)</h3>
+            <h3 className="text-lg font-semibold text-black mb-4">For High Humidity (&gt;70%)</h3>
             <ul className="space-y-3">
               <li className="flex items-start space-x-3">
                 <CheckCircle className="w-5 h-5 text-emerald-400 mt-0.5" />
-                <span className="text-white/90">Use dehumidifiers to reduce indoor humidity</span>
+                <span className="text-black/90">Use dehumidifiers to reduce indoor humidity</span>
               </li>
               <li className="flex items-start space-x-3">
                 <CheckCircle className="w-5 h-5 text-emerald-400 mt-0.5" />
-                <span className="text-white/90">Avoid outdoor activities during high humidity periods</span>
+                <span className="text-black/90">Avoid outdoor activities during high humidity periods</span>
               </li>
               <li className="flex items-start space-x-3">
                 <CheckCircle className="w-5 h-5 text-emerald-400 mt-0.5" />
-                <span className="text-white/90">Monitor for increased respiratory symptoms</span>
+                <span className="text-black/90">Monitor for increased respiratory symptoms</span>
               </li>
             </ul>
           </div>
 
           <div className="recommendation-card p-6">
-            <h3 className="text-lg font-semibold text-white mb-4">For Low Wind Speed (&lt;2 m/s)</h3>
+            <h3 className="text-lg font-semibold text-black mb-4">For Low Wind Speed (&lt;2 m/s)</h3>
             <ul className="space-y-3">
               <li className="flex items-start space-x-3">
                 <CheckCircle className="w-5 h-5 text-emerald-400 mt-0.5" />
-                <span className="text-white/90">Pollutants may accumulate in the area</span>
+                <span className="text-black/90">Pollutants may accumulate in the area</span>
               </li>
               <li className="flex items-start space-x-3">
                 <CheckCircle className="w-5 h-5 text-emerald-400 mt-0.5" />
-                <span className="text-white/90">Use air purifiers indoors</span>
+                <span className="text-black/90">Use air purifiers indoors</span>
               </li>
               <li className="flex items-start space-x-3">
                 <CheckCircle className="w-5 h-5 text-emerald-400 mt-0.5" />
-                <span className="text-white/90">Limit outdoor activities, especially near traffic</span>
+                <span className="text-black/90">Limit outdoor activities, especially near traffic</span>
               </li>
             </ul>
           </div>
 
           <div className="recommendation-card p-6">
-            <h3 className="text-lg font-semibold text-white mb-4">For Good Conditions</h3>
+            <h3 className="text-lg font-semibold text-black mb-4">For Good Conditions</h3>
             <ul className="space-y-3">
               <li className="flex items-start space-x-3">
                 <CheckCircle className="w-5 h-5 text-emerald-400 mt-0.5" />
-                <span className="text-white/90">Safe for outdoor activities</span>
+                <span className="text-black/90">Safe for outdoor activities</span>
               </li>
               <li className="flex items-start space-x-3">
                 <CheckCircle className="w-5 h-5 text-emerald-400 mt-0.5" />
-                <span className="text-white/90">Good time for outdoor exercise</span>
+                <span className="text-black/90">Good time for outdoor exercise</span>
               </li>
               <li className="flex items-start space-x-3">
                 <CheckCircle className="w-5 h-5 text-emerald-400 mt-0.5" />
-                <span className="text-white/90">Natural ventilation is beneficial</span>
+                <span className="text-black/90">Natural ventilation is beneficial</span>
               </li>
             </ul>
           </div>
