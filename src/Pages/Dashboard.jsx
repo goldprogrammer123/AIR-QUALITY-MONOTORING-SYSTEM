@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { fetchWithCache } from "../utils/dataUtils";
-import { Download, FileText, BarChart3, Activity } from "lucide-react";
+import { Download, FileText, BarChart3, Activity, ChevronLeft, ChevronRight } from "lucide-react";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
 
-const PAGE_LIMIT = 100; // items per page
+const PAGE_LIMIT = 100; // items per page from API
+const DISPLAY_LIMIT = 11; // items to display at once
 
 const Dashboard = () => {
   const [allData, setAllData] = useState([]); // all loaded data so far
@@ -18,6 +19,10 @@ const Dashboard = () => {
   const [selectedMeasurement, setSelectedMeasurement] = useState(null);
 
   const [filteredData, setFilteredData] = useState([]);
+  
+  // Pagination state for display
+  const [currentPage, setCurrentPage] = useState(1);
+  const [displayData, setDisplayData] = useState([]);
 
   // Fetch a page of data from backend
   const fetchDataPage = async (pageNum) => {
@@ -110,6 +115,39 @@ const Dashboard = () => {
     }
   }, [selectedDevice, selectedMeasurement, allData]);
 
+  // Update display data based on current page
+  useEffect(() => {
+    const startIndex = (currentPage - 1) * DISPLAY_LIMIT;
+    const endIndex = startIndex + DISPLAY_LIMIT;
+    setDisplayData(filteredData.slice(startIndex, endIndex));
+  }, [filteredData, currentPage]);
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedDevice, selectedMeasurement]);
+
+  // Pagination handlers
+  const totalPages = Math.ceil(filteredData.length / DISPLAY_LIMIT);
+  
+  const goToPage = (pageNum) => {
+    if (pageNum >= 1 && pageNum <= totalPages) {
+      setCurrentPage(pageNum);
+    }
+  };
+
+  const goToNextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
+
+  const goToPrevPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
+
   // Handlers for device and measurement selection toggle
   const handleDeviceClick = (deviceId) => {
     if (selectedDevice === deviceId) {
@@ -176,7 +214,7 @@ const Dashboard = () => {
     doc.text(`Generated on: ${new Date().toLocaleString()}`, 14, 24);
     doc.text(`${selectedDevice ?`Device: ${selectedDevice}`  : 'All Devices'}`, 14, 30);
     doc.text(`${selectedMeasurement ? `Measurement: ${selectedMeasurement}` : 'All Measurements'}`, 14, 36);
-    doc.text(Total `Records: ${dataToExport.length}`, 14, 42);
+    doc.text(`Total Records: ${dataToExport.length}`, 14, 42);
 
     // Prepare table data
     const tableColumn = ["Device ID", "Measurement", "Value", "Timestamp"];
@@ -327,11 +365,11 @@ const Dashboard = () => {
           </h2>
           <div className="flex items-center space-x-2 text-black/60">
             <Activity className="w-4 h-4" />
-            <span>{filteredData.length} records</span>
+            <span>Showing {displayData.length} of {filteredData.length} records</span>
           </div>
         </div>
 
-        {filteredData.length === 0 && !loading && (
+        {displayData.length === 0 && !loading && (
           <div className="text-center text-black/60 py-8 text-lg">No data available.</div>
         )}
 
@@ -346,7 +384,7 @@ const Dashboard = () => {
               </tr>
             </thead>
             <tbody>
-              {filteredData.map((item, idx) => (
+              {displayData.map((item, idx) => (
                 <tr key={idx} className="border hover:bg-emerald-700/10 transition-colors">
                   <td className="border p-3 text-black">{item.id}</td>
                   <td className="border p-3 text-black">{item.measurement}</td>
@@ -357,6 +395,70 @@ const Dashboard = () => {
             </tbody>
           </table>
         </div>
+
+        {/* Pagination Controls */}
+        {filteredData.length > DISPLAY_LIMIT && (
+          <div className="flex items-center justify-between mt-6">
+            <div className="text-sm text-black/60">
+              Page {currentPage} of {totalPages} ({filteredData.length} total records)
+            </div>
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={goToPrevPage}
+                disabled={currentPage === 1}
+                className={`p-2 rounded-lg transition-all duration-300 ${
+                  currentPage === 1 
+                    ? 'text-gray-400 cursor-not-allowed' 
+                    : 'glass-button text-black hover:bg-emerald-500/20'
+                }`}
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+              
+              {/* Page numbers */}
+              <div className="flex items-center space-x-1">
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  let pageNum;
+                  if (totalPages <= 5) {
+                    pageNum = i + 1;
+                  } else if (currentPage <= 3) {
+                    pageNum = i + 1;
+                  } else if (currentPage >= totalPages - 2) {
+                    pageNum = totalPages - 4 + i;
+                  } else {
+                    pageNum = currentPage - 2 + i;
+                  }
+                  
+                  return (
+                    <button
+                      key={pageNum}
+                      onClick={() => goToPage(pageNum)}
+                      className={`px-3 py-2 rounded-lg transition-all duration-300 ${
+                        currentPage === pageNum
+                          ? 'glass-button text-black'
+                          : 'glass-card text-black hover:bg-emerald-500/20'
+                      }`}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                })}
+              </div>
+              
+              <button
+                onClick={goToNextPage}
+                disabled={currentPage === totalPages}
+                className={`p-2 rounded-lg transition-all duration-300 ${
+                  currentPage === totalPages 
+                    ? 'text-gray-400 cursor-not-allowed' 
+                    : 'glass-button text-black hover:bg-emerald-500/20'
+                }`}
+              >
+                <ChevronRight className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+        )}
 
         {loading && (
           <div className="flex flex-col items-center mt-6">

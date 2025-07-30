@@ -27,37 +27,48 @@ const Location = () => {
     setLoading(true);
     setError(null);
     try {
-      // Fetch device data from your backend (new API structure)
-      const result = await fetchWithCache("/api/sensordata/?format=json", "sensor_locations");
-      
-      // Hardcoded coordinates for Ardhi University
-      const hardcodedCoordinates = { lat: -6.7650985, lng: 39.2132128 };
-      
-      // Process the data to extract devices (all with the same hardcoded coordinates)
-      const sensorArray = (result || []).map((item) => {
-        let battery = null;
-        let airQuality = "Unknown";
-        if (item.measurements && Array.isArray(item.measurements)) {
-          for (const m of item.measurements) {
-            if (m.name && m.name.toLowerCase() === "batterypercentage") battery = m.value;
-            if (m.name && m.name.toLowerCase().includes("airquality")) airQuality = m.value;
-          }
+      // Hardcoded data for the two specific devices
+      const hardcodedSensors = [
+        {
+          id: "bme680-ph-dox-full-sensor-test",
+          name: "Air Quality Sensor bme680-ph-dox-full-sensor-test",
+          location: "Ardhi University Main Campus",
+          coordinates: { lat: -6.7650985, lng: 39.2132128 },
+          status: "online",
+          lastReading: new Date().toLocaleString(),
+          airQuality: "Good",
+          battery: 89,
+          measurements: [
+            { name: "Temperature", value: 22.4, unit: "°C" },
+            { name: "Humidity", value: 85.7, unit: "%" },
+            { name: "Pressure", value: 1009.9, unit: "hPa" },
+            { name: "BatteryPercentage", value: 89.2, unit: "%" },
+            { name: "AirQualityScore", value: 0.815, unit: "" }
+          ]
+        },
+        {
+          id: "ardhi-bme-280",
+          name: "Air Quality Sensor ardhi-bme-280",
+          location: "Ardhi BME Location",
+          location: "Ardhi University Main Campus",
+          coordinates: { lat: -6.7660997, lng: 39.2132129 },
+          status: "online",
+          lastReading: new Date().toLocaleString(),
+          airQuality: "Moderate",
+          battery: 92,
+          measurements: [
+            { name: "Temperature", value: 23.96, unit: "°C" },
+            { name: "Humidity", value: 49.97, unit: "%" },
+            { name: "Pressure", value: 1011.6, unit: "hPa" },
+            { name: "CO2", value: 3403.4, unit: "ppm" },
+            { name: "NOx", value: 0.64, unit: "ppm" }
+          ]
         }
-        return {
-          id: item.device_id,
-          name: `Air Quality Sensor ${item.device_id}`,
-          location: `Device ${item.device_id}`,
-          coordinates: hardcodedCoordinates,
-          status: "online", // You can improve this logic
-          lastReading: item.received_at ? new Date(item.received_at).toLocaleString() : "N/A",
-          airQuality: airQuality,
-          battery: battery !== null ? Math.round(battery) : 100,
-          measurements: item.measurements || []
-        };
-      });
-      setSensors(sensorArray);
+      ];
+      
+      setSensors(hardcodedSensors);
     } catch (error) {
-      console.error("Error fetching sensor data:", error);
+      console.error("Error loading sensor data:", error);
       setError("Failed to load sensor data. Please try again.");
     } finally {
       setLoading(false);
@@ -442,10 +453,10 @@ const Location = () => {
                         <tbody>
                           {selectedSensor.measurements.slice(0, 5).map((measurement, idx) => (
                             <tr key={idx} className="border hover:bg-emerald-500/10 transition-colors">
-                              <td className="border p-3 text-black">{measurement.type}</td>
-                              <td className="border p-3 text-black">{measurement.value}</td>
+                              <td className="border p-3 text-black">{measurement.name}</td>
+                              <td className="border p-3 text-black">{measurement.value}{measurement.unit || ''}</td>
                               <td className="border p-3 text-black">
-                                {new Date(measurement.time).toLocaleString()}
+                                {new Date(selectedSensor.lastReading).toLocaleString()}
                               </td>
                             </tr>
                           ))}
