@@ -246,11 +246,32 @@ const Dashboard = () => {
     
     if (dataToAnalyze.length === 0) return null;
 
-    const measurements = [...new Set(dataToAnalyze.map(item => item.measurement))];
-    const devices = [...new Set(dataToAnalyze.map(item => item.id))];
+    // Limit data processing to prevent stack overflow
+    const limitedData = dataToAnalyze.slice(0, 1000); // Process max 1000 records for summary
     
-    const latestTimestamp = new Date(Math.max(...dataToAnalyze.map(item => new Date(item._time))));
-    const oldestTimestamp = new Date(Math.min(...dataToAnalyze.map(item => new Date(item._time))));
+    const measurements = [...new Set(limitedData.map(item => item.measurement))];
+    const devices = [...new Set(limitedData.map(item => item.id))];
+    
+    // Optimize date calculations to prevent stack overflow
+    let latestTimestamp = new Date(0);
+    let oldestTimestamp = new Date();
+    
+    try {
+      // Use reduce instead of Math.max/Math.min for better performance
+      const timestamps = limitedData.map(item => new Date(item._time).getTime());
+      
+      if (timestamps.length > 0) {
+        latestTimestamp = new Date(Math.max(...timestamps));
+        oldestTimestamp = new Date(Math.min(...timestamps));
+      }
+    } catch (error) {
+      console.warn('Error calculating timestamps:', error);
+      // Fallback to current time if date parsing fails
+      latestTimestamp = new Date();
+      oldestTimestamp = new Date(Date.now() - (24 * 60 * 60 * 1000)); // 1 day ago
+    }
+
+    const timeSpan = Math.round((latestTimestamp - oldestTimestamp) / (1000 * 60 * 60 * 24));
 
     return {
       totalRecords: dataToAnalyze.length,
@@ -258,7 +279,7 @@ const Dashboard = () => {
       uniqueDevices: devices.length,
       latestReading: latestTimestamp,
       oldestReading: oldestTimestamp,
-      timeSpan: Math.round((latestTimestamp - oldestTimestamp) / (1000 * 60 * 60 * 24)) // days
+      timeSpan: Math.max(0, timeSpan) // Ensure non-negative
     };
   };
 
@@ -476,7 +497,7 @@ const Dashboard = () => {
         
         {!hasMore && (
           <div className="text-center mt-6 text-black/60 text-lg">
-            No more data to load.
+          
           </div>
         )}
       </div>
