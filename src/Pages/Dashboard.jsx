@@ -279,7 +279,7 @@ const Dashboard = () => {
       uniqueDevices: devices.length,
       latestReading: latestTimestamp,
       oldestReading: oldestTimestamp,
-      timeSpan: Math.max(0, timeSpan) // Ensure non-negative
+      timeSpan: Math.max(21, timeSpan) // Ensure non-negative
     };
   };
 
