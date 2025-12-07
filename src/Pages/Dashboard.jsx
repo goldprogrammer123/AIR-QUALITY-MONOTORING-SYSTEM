@@ -1,508 +1,511 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
+import { Line, Bar } from "react-chartjs-2";
+import "chartjs-adapter-date-fns";
+import { subDays, eachHourOfInterval, addHours } from "date-fns";
 import { fetchWithCache } from "../utils/dataUtils";
-import { Download, FileText, BarChart3, Activity, ChevronLeft, ChevronRight } from "lucide-react";
-import jsPDF from "jspdf";
-import "jspdf-autotable";
+import {
+  calculateAQI,
+  getAQIStatus,
+  extractPollutantData,
+} from "../utils/aqiUtils";
+import { Activity, AlertTriangle, CheckCircle } from "lucide-react";
 
-const PAGE_LIMIT = 100; // items per page from API
-const DISPLAY_LIMIT = 11; // items to display at once
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  ArcElement,
+  Tooltip,
+  Legend,
+  TimeScale,
+  Filler,
+} from "chart.js";
 
-const Dashboard = () => {
-  const [allData, setAllData] = useState([]); // all loaded data so far
-  const [page, setPage] = useState(1); // current page
-  const [hasMore, setHasMore] = useState(true); // if more pages exist
-  const [loading, setLoading] = useState(false);
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  ArcElement,
+  Tooltip,
+  Legend,
+  TimeScale,
+  Filler
+);
 
-  const [deviceIds, setDeviceIds] = useState([]);
-  const [selectedDevice, setSelectedDevice] = useState(null);
-  const [measurements, setMeasurements] = useState([]);
-  const [selectedMeasurement, setSelectedMeasurement] = useState(null);
+export default function Dashboard({}) {
+  const [selectedSensor, setSelectedSensor] = useState(null);
+  const [data, setData] = useState([]);
+  const [sensors, setSensors] = useState([]);
+  const [weatherData, setWeatherData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [currentAQI, setCurrentAQI] = useState(0);
+  const [dominantPollutant, setDominantPollutant] = useState("None");
+  const [selectedTimeRange, setSelectedTimeRange] = useState("24h");
+  const [dataWarning, setDataWarning] = useState("");
+  const [pollutantValues, setPollutantValues] = useState({
+    nox: 0,
+    voc: 0,
+    co2: 0,
+    benzene: 0,
+  });
 
-  const [filteredData, setFilteredData] = useState([]);
+  /*  get latest pollutants for a sensor */
+ // FIXED: getLatestPollutants
+const getLatestPollutants = (sensorId, dataSubset = data) => {
+  const sensorData = dataSubset.filter(d => d.id === sensorId);
+  if (sensorData.length === 0) {
+    return { nox: 0, voc: 0, co2: 0, benzene: 0 };
+  }
+
+  // Find the most recent timestamp
+  const latestTime = Math.max(...sensorData.map(d => new Date(d._time).getTime()));
+  const latestEntries = sensorData.filter(d => new Date(d._time).getTime() === latestTime);
+
+  // Initialize pollutants object
+  const pollutants = { nox: 0, voc: 0, co2: 0, benzene: 0 };
   
-  // Pagination state for display
-  const [currentPage, setCurrentPage] = useState(1);
-  const [displayData, setDisplayData] = useState([]);
-
-  // Fetch a page of data from backend
-  const fetchDataPage = async (pageNum) => {
-    setLoading(true);
-    try {
-      const cacheKey = `dashboard_page_${pageNum}`;
-      const result = await fetchWithCache(
-        `/api/sensordata/?format=json`,
-        cacheKey
-      );
-
-      // The API returns an array directly, not an object with a 'data' property.
-      const processedData = (result || []).flatMap((item) =>
-        (item.measurements || []).map((measurement) => ({
-          id: item.device_id,
-          measurement: measurement.name,
-          value:
-            typeof measurement.value === "number"
-              ? Number(measurement.value.toFixed(6))
-              : measurement.value,
-          _time: item.received_at,
-        }))
-      );
-
-      // Deduplicate based on _time and measurement
-      const uniqueData = processedData.filter((item) => {
-        const key = `${item._time}-${item.measurement}`;
-        return !allData.some(
-          (prevItem) => `${prevItem._time}-${prevItem.measurement}` === key
-        );
-      });
-
-      setAllData((prev) => [...prev, ...uniqueData]);
-
-      // Update device IDs after new data loaded
-      const uniqueDevices = [
-        ...new Set([...allData, ...uniqueData].map((item) => item.id)),
-      ];
-      setDeviceIds(uniqueDevices);
-
-      // Since the API doesn't provide pagination info, we'll assume there's more data if we received a full page.
-      setHasMore(processedData.length === PAGE_LIMIT);
-    } catch (error) {
-      console.error("Error fetching data:", error);
-    } finally {
-      setLoading(false);
+  latestEntries.forEach(entry => {
+    if (entry.parameter in pollutants) {
+      pollutants[entry.parameter] = entry.value;
     }
-  };
+  });
 
-  // Initial load & load on page change
-  useEffect(() => {
-    if (hasMore) {
-      fetchDataPage(page);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page]);
+  return pollutants;
+};
 
-  // Scroll handler to load next page when near bottom
-  useEffect(() => {
-    const handleScroll = () => {
-      if (
-        window.innerHeight + window.scrollY >=
-          document.documentElement.scrollHeight - 200 &&
-        !loading &&
-        hasMore
-      ) {
-        setPage((prev) => prev + 1);
-      }
-    };
+  /*AIR QUALITY API */
+// FIXED: Inside fetchAirData — the part that was crashing
+const fetchAirData = async () => {
+  const result = await fetchWithCache(
+    "/api/sensordata/?format=json",
+    "dashboard_data"
+  );
 
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, [loading, hasMore]);
+  console.log("Raw API response:", result);
 
-  // Update measurements list and filtered data when selections or data change
-  useEffect(() => {
-    if (selectedDevice) {
-      const deviceData = allData.filter((item) => item.id === selectedDevice);
-      const uniqueMeasurements = [...new Set(deviceData.map((item) => item.measurement))];
-      setMeasurements(uniqueMeasurements);
+  if (!result || result.length === 0) {
+    setDataWarning("No sensor data received from API");
+    setLoading(false);
+    return;
+  }
 
-      if (selectedMeasurement) {
-        setFilteredData(deviceData.filter((item) => item.measurement === selectedMeasurement));
-      } else {
-        setFilteredData(deviceData);
-      }
-    } else {
-      setFilteredData(allData);
-      setMeasurements([]);
-    }
-  }, [selectedDevice, selectedMeasurement, allData]);
+  // ... [your existing normalization code] ...
 
-  // Update display data based on current page
-  useEffect(() => {
-    const startIndex = (currentPage - 1) * DISPLAY_LIMIT;
-    const endIndex = startIndex + DISPLAY_LIMIT;
-    setDisplayData(filteredData.slice(startIndex, endIndex));
-  }, [filteredData, currentPage]);
+  const processed = (result || []).flatMap((item) => {
+    const measurements = item.measurements || [];
+    const timestamp = item.received_at || item.timestamp || new Date().toISOString();
+    const deviceId = item.device_id || item.sensor_id || item.id || "unknown";
 
-  // Reset to first page when filters change
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [selectedDevice, selectedMeasurement]);
+    return measurements.map((m) => {
+      const param =
+        m.parameter?.toLowerCase() ||
+        m.pollutant?.toLowerCase() ||
+        m.type?.toLowerCase() ||
+        m.name?.toLowerCase() ||
+        m.channel?.toLowerCase() ||
+        String(m.key || "").toLowerCase();
 
-  // Pagination handlers
-  const totalPages = Math.ceil(filteredData.length / DISPLAY_LIMIT);
-  
-  const goToPage = (pageNum) => {
-    if (pageNum >= 1 && pageNum <= totalPages) {
-      setCurrentPage(pageNum);
-    }
-  };
+      const normalizedParam = {
+        nox: "nox", no2: "nox", "no2 (ppb)": "nox",
+        voc: "voc", tvoc: "voc", "voc (ppb)": "voc",
+        co2: "co2", "co2 (ppm)": "co2",
+        benzene: "benzene", c6h6: "benzene", "benzene (ppb)": "benzene",
+      }[param] || param;
 
-  const goToNextPage = () => {
-    if (currentPage < totalPages) {
-      setCurrentPage(currentPage + 1);
-    }
-  };
-
-  const goToPrevPage = () => {
-    if (currentPage > 1) {
-      setCurrentPage(currentPage - 1);
-    }
-  };
-
-  // Handlers for device and measurement selection toggle
-  const handleDeviceClick = (deviceId) => {
-    if (selectedDevice === deviceId) {
-      setSelectedDevice(null);
-      setSelectedMeasurement(null);
-    } else {
-      setSelectedDevice(deviceId);
-      setSelectedMeasurement(null);
-    }
-  };
-
-  const handleMeasurementClick = (measurement) => {
-    if (selectedMeasurement === measurement) {
-      setSelectedMeasurement(null);
-    } else {
-      setSelectedMeasurement(measurement);
-    }
-  };
-
-  // Export data to CSV
-  const exportToCSV = () => {
-    const dataToExport = filteredData.length > 0 ? filteredData : allData;
-    
-    if (dataToExport.length === 0) {
-      alert('No data to export');
-      return;
-    }
-
-    const headers = ['Device ID', 'Measurement', 'Value', 'Timestamp'];
-    const csvContent = [
-      headers.join(','),
-      ...dataToExport.map(item => [
-        item.id,
-        item.measurement,
-        item.value,
-        new Date(item._time).toLocaleString()
-      ].join(','))
-    ].join('\n');
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', `air_quality_data_${new Date().toISOString().split('T')[0]}.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  // Export data to PDF (simplified version)
-  const exportToPDF = () => {
-    const dataToExport = filteredData.length > 0 ? filteredData : allData;
-
-    if (dataToExport.length === 0) {
-      alert('No data to export');
-      return;
-    }
-
-    const doc = new jsPDF();
-    doc.setFontSize(16);
-    doc.text("Air Quality Monitoring System - Data Report", 14, 16);
-    doc.setFontSize(10);
-    doc.text(`Generated on: ${new Date().toLocaleString()}`, 14, 24);
-    doc.text(`${selectedDevice ?`Device: ${selectedDevice}`  : 'All Devices'}`, 14, 30);
-    doc.text(`${selectedMeasurement ? `Measurement: ${selectedMeasurement}` : 'All Measurements'}`, 14, 36);
-    doc.text(`Total Records: ${dataToExport.length}`, 14, 42);
-
-    // Prepare table data
-    const tableColumn = ["Device ID", "Measurement", "Value", "Timestamp"];
-    const tableRows = dataToExport.slice(0, 100).map(item => [
-      item.id,
-      item.measurement,
-      item.value,
-      new Date(item._time).toLocaleString()
-    ]);
-
-    doc.autoTable({
-      head: [tableColumn],
-      body: tableRows,
-      startY: 48,
-      styles: { fontSize: 8 },
-      headStyles: { fillColor: [22, 160, 133] }
+      return {
+        id: deviceId,
+        parameter: normalizedParam,
+        value: parseFloat(m.value) || 0,
+        _time: timestamp,
+      };
     });
+  });
 
-    if (dataToExport.length > 100) {
-      doc.text(`... and ${dataToExport.length - 100} more records`, 14, doc.lastAutoTable.finalY + 10);
+  const validData = processed.filter(d => 
+    ["nox", "voc", "co2", "benzene"].includes(d.parameter)
+  );
+
+  console.log("Processed data:", validData);
+
+  if (validData.length === 0) {
+    setDataWarning("No valid pollutant data found. Check parameter names.");
+  } else {
+    setDataWarning("");
+  }
+
+  setData(validData);
+
+  const uniqueSensors = [...new Set(validData.map(d => d.id))].sort();
+  setSensors(uniqueSensors);
+
+  // FIXED: This part was causing the crash
+  let total = { nox: 0, voc: 0, co2: 0, benzene: 0 };
+  let count = 0;
+
+  uniqueSensors.forEach(sensorId => {
+    const latest = getLatestPollutants(sensorId, validData);  // ← now works!
+    if (Object.values(latest).some(v => v > 0)) {
+      Object.keys(total).forEach(k => {
+        total[k] += latest[k];
+      });
+      count++;
     }
+  });
 
-    doc.save(`air_quality_report_${new Date().toISOString().split('T')[0]}.pdf`);
-  };
+  if (count > 0) {
+    Object.keys(total).forEach(k => total[k] /= count);
+  }
 
-  // Get data summary statistics
-  const getDataSummary = () => {
-    const dataToAnalyze = filteredData.length > 0 ? filteredData : allData;
-    
-    if (dataToAnalyze.length === 0) return null;
+  setPollutantValues(total);
 
-    // Limit data processing to prevent stack overflow
-    const limitedData = dataToAnalyze.slice(0, 1000); // Process max 1000 records for summary
-    
-    const measurements = [...new Set(limitedData.map(item => item.measurement))];
-    const devices = [...new Set(limitedData.map(item => item.id))];
-    
-    // Optimize date calculations to prevent stack overflow
-    let latestTimestamp = new Date(0);
-    let oldestTimestamp = new Date();
-    
+  const { aqi, pollutant } = calculateAQI(
+    total.nox,
+    total.voc,
+    total.co2,
+    total.benzene
+  );
+
+  setCurrentAQI(Math.round(aqi));
+  setDominantPollutant(pollutant || "None");
+};
+
+  /*  WEATHER API*/
+  const fetchWeatherData = async () => {
     try {
-      // Use reduce instead of Math.max/Math.min for better performance
-      const timestamps = limitedData.map(item => new Date(item._time).getTime());
-      
-      if (timestamps.length > 0) {
-        latestTimestamp = new Date(Math.max(...timestamps));
-        oldestTimestamp = new Date(Math.min(...timestamps));
-      }
+      const apiKey = "09d92c7839a7f3b96baeddbb21bd26dc";
+      const city = "Dar es Salaam";
+      const url = `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${apiKey}&units=metric`;
+
+      const response = await fetch(url);
+      const result = await response.json();
+      setWeatherData({
+        temperature: `${Math.round(result.main.temp)} °C`,
+        humidity: `${Math.round(result.main.humidity)} %`,
+        pressure: `${Math.round(result.main.pressure)} hPa`,
+        windSpeed: `${result.wind.speed.toFixed(1)} m/s`,
+        visibility: `${((result.visibility || 10000) / 1000).toFixed(1)} km`,
+      });
     } catch (error) {
-      console.warn('Error calculating timestamps:', error);
-      // Fallback to current time if date parsing fails
-      latestTimestamp = new Date();
-      oldestTimestamp = new Date(Date.now() - (24 * 60 * 60 * 1000)); // 1 day ago
+      console.error("Weather error:", error);
     }
-
-    const timeSpan = Math.round((latestTimestamp - oldestTimestamp) / (1000 * 60 * 60 * 24));
-
-    return {
-      totalRecords: dataToAnalyze.length,
-      uniqueMeasurements: measurements.length,
-      uniqueDevices: devices.length,
-      latestReading: latestTimestamp,
-      oldestReading: oldestTimestamp,
-      timeSpan: Math.max(21, timeSpan) // Ensure non-negative
-    };
   };
 
-  const summary = getDataSummary();
+  useEffect(() => {
+    Promise.all([fetchAirData(), fetchWeatherData()]).finally(() =>
+      setLoading(false)
+    );
+  }, []);
+
+  /*AQI general */
+  const createHistoricalData = (sensorId = null) => {
+    const endDate = new Date();
+    const startDate =
+      selectedTimeRange === "24h" ? subDays(endDate, 1) : subDays(endDate, 7);
+
+    const filteredData = sensorId ? data.filter((d) => d.id === sensorId) : data;
+
+    return eachHourOfInterval({ start: startDate, end: endDate }).map(
+      (hour) => {
+        const hourStart = hour;
+        const hourEnd = addHours(hour, 1);
+        const hourData = filteredData.filter(
+          (item) => {
+            const t = new Date(item._time);
+            return t >= hourStart && t < hourEnd;
+          }
+        );
+        const pollutantData = extractPollutantData(hourData);
+        const { aqi } = calculateAQI(
+          pollutantData.nox,
+          pollutantData.voc,
+          pollutantData.co2,
+          pollutantData.benzene
+        );
+        return { x: hour, y: aqi || 0 };
+      }
+    );
+  };
+
+  // sensor status badge
+  const getSensorStatus = (aqi) => {
+    if (aqi <= 50) return { label: "Good", color: "bg-green-500" };
+    if (aqi <= 100) return { label: "Moderate", color: "bg-yellow-500" };
+    return { label: "Poor", color: "bg-red-500" };
+  };
+
+  if (loading) return <div className="p-10 text-center">Loading...</div>;
+
+  // Get current pollutants for display (selected or average)
+  const displayPollutants = selectedSensor
+    ? getLatestPollutants(selectedSensor, data)
+    : pollutantValues;
 
   return (
-    <div className="min-h-screen text-black">
-      {/* Header with Export Options */}
-      <div className="bg-white shadow-2xl rounded-xl p-6 mb-6">
-        <div className="flex items-center justify-between mb-4 ">
-          <div>
-            <h1 className="text-3xl font-bold text-black mb-2">Data Dashboard</h1>
-            <p className="text-black/70">Real-time air quality data monitoring and analysis</p>
-          </div>
+    <div className="space-y-10 p-4 md:p-8 bg-gradient-to-br from-slate-50 to-slate-100 min-h-screen">
+      {/* ================= HEADER ================= */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <h1 className="text-3xl md:text-4xl font-bold text-slate-800">
+            Air Quality Dashboard
+          </h1>
+          <p className="text-slate-500 mt-1">
+            Live environmental and weather monitoring
+          </p>
         </div>
 
-        {/* Data Summary */}
-        {summary && (
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            <div className="bg-white shadow rounded-xl p-4 flex flex-col items-center">
-              <div className="text-2xl font-semibold text-black">{summary.uniqueDevices}</div>
-              <div className="text-sm font-bold text-black/60">Devices</div>
-            </div>
-            <div className="bg-white shadow rounded-xl p-4 flex flex-col items-center">
-              <div className="text-2xl font-bold text-black">{summary.uniqueMeasurements}</div>
-              <div className="text-sm font-semibold text-black/60">Measurements</div>
-            </div>
-            <div className="bg-white shadow rounded-xl p-4 flex flex-col items-center">
-              <div className="text-2xl font-bold text-black">{summary.timeSpan}</div>
-              <div className="text-sm font-semibold text-black/60">Days Span</div>
-            </div>
-            <div className="bg-white shadow rounded-xl p-4 flex flex-col items-center">
-              <div className="text-2xl font-bold text-black">{summary.latestReading.toLocaleDateString()}</div>
-              <div className="text-sm font-semibold text-black/60">Latest Reading</div>
-            </div>
-            <div className="flex flex-col justify-center items-center">
-              <button
-                onClick={exportToCSV}
-                className="glass-button px-4 py-2 rounded-lg text-white text-sm flex items-center space-x-2"
-              >
-                <Download className="w-4 h-4" />
-                <span>Export CSV</span>
-              </button>
-              {/* <button
-                onClick={exportToPDF}
-                className="glass-button px-4 py-2 rounded-lg text-white text-sm flex items-center space-x-2"
-              >
-                <FileText className="w-4 h-4" />
-                <span>Export Report</span>
-              </button> */}
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Device Selection */}
-      <div className="bg-white shadow-2xl rounded-xl p-6 mb-6">
-        <h2 className="text-2xl font-bold mb-4 text-black">Select Device</h2>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-          {deviceIds.map((deviceId) => (
-            <button
-              key={deviceId}
-              className={`p-4 rounded-xl transition-all duration-300 ${
-                selectedDevice === deviceId 
-                  ? "glass-button text-black" 
-                  : "glass-card text-black hover:bg-black-500/20"
-              }`}
-              onClick={() => handleDeviceClick(deviceId)}
-            >
-              <span className="font-medium">Device:</span> {deviceId}
-            </button>
-          ))}
+        <div className="px-6 py-2 text-sm rounded-full border border-blue-400 shadow-lg w-fit">
+          Dominant Pollutant: {dominantPollutant}
         </div>
       </div>
 
-      {/* Measurement Selection */}
-      {selectedDevice && measurements.length > 0 && (
-        <div className="bg-white shadow-2xl rounded-xl p-6 mb-6">
-          <h2 className="text-2xl font-bold mb-4 text-black">Select Measurement</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {measurements.map((measurement) => (
-              <button
-                key={measurement}
-                className={`p-4 rounded-xl transition-all duration-300 ${
-                  selectedMeasurement === measurement 
-                    ? "glass-button text-black" 
-                    : "glass-card text-black hover:bg-emerald"
-                }`}
-                onClick={() => handleMeasurementClick(measurement)}
+      {/* ================= AQI + POLLUTANTS ================= */}
+      <h1>Summary of data from sensors</h1>
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
+        <div className="rounded-2xl p-5 bg-white border border-blue-400 shadow-xl">
+          <p className="text-sm opacity-80 text-green-400">AQI</p>
+          <p className="text-4xl font-bold mt-2">{currentAQI}</p>
+        </div>
+
+        {[
+          ["NOx", displayPollutants.nox],
+          ["VOC", displayPollutants.voc],
+          ["CO2", displayPollutants.co2],
+          ["Benzene", displayPollutants.benzene],
+        ].map(([label, value]) => (
+          <div
+            key={label}
+            className="rounded-2xl p-5 bg-white shadow-xl border border-blue-400 hover:scale-105 transition"
+          >
+            <p className="text-sm text-slate-500">{label}</p>
+            <p className="text-3xl font-bold text-slate-800 mt-2">
+              {Number(value).toFixed(2)}
+            </p>
+          </div>
+        ))}
+
+        <div className="rounded-2xl bg-white border border-blue-400 p-6 shadow-xl text-center">
+          <p className="text-sm opacity-80">Total Sensors</p>
+          <p className="text-4xl font-bold mt-2">{sensors.length}</p>
+        </div>
+      </div>
+
+      {/* ================= WEATHER ================= */}
+      {weatherData && (
+        <div className="p-6 bg-blue-200 rounded-xl py-8">
+          <h2 className="text-xl font-bold text-slate-800 mb-4">
+            Current Weather – Dar es Salaam
+          </h2>
+
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
+            {Object.entries(weatherData).map(([key, value]) => (
+              <div
+                key={key}
+                className="rounded-xl p-4 bg-slate-50 border border-blue-400 text-center"
               >
-                {measurement}
-              </button>
+                <p className="text-xs uppercase tracking-wide text-slate-500">
+                  {key}
+                </p>
+                <p className="text-2xl font-bold text-slate-800 mt-1">
+                  {value}
+                </p>
+              </div>
             ))}
+          </div>
+          <div className="p-3 text-gray-500">
+            <p>
+              Weather Impact: Moderate wind conditions are helping disperse
+              pollutants. Air quality expected to improve throughout the day
+            </p>
           </div>
         </div>
       )}
 
-      {/* Data Table */}
-      <div className="bg-white shadow-2xl rounded-xl p-6">
+      {/* ================= SENSORS ================= */}
+      <div className="bg-white rounded-3xl shadow p-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-2xl font-bold text-black">
-            {selectedDevice ? `Device: ${selectedDevice}` : "All Devices"}
-            {selectedMeasurement ? ` | Measurement: ${selectedMeasurement}` : ""}
-          </h2>
-          <div className="flex items-center space-x-2 text-black/60">
-            <Activity className="w-4 h-4" />
-            <span>Showing {displayData.length} of {filteredData.length} records</span>
-          </div>
+          <h2 className="text-xl font-bold text-slate-800">Available Sensors</h2>
+          {selectedSensor && (
+            <button
+              onClick={() => setSelectedSensor(null)}
+              className="px-4 py-1.5 rounded-full text-sm font-semibold bg-slate-200 text-slate-700 hover:bg-slate-300 transition"
+            >
+              View All Sensors
+            </button>
+          )}
         </div>
-
-        {displayData.length === 0 && !loading && (
-          <div className="text-center text-black/60 py-8 text-lg">No data available.</div>
-        )}
-
-        <div className="overflow-x-auto max-h-[60vh] rounded-xl">
-          <table className="min-w-full border-collapse glass-table rounded-xl">
-            <thead className="sticky top-0">
-              <tr>
-                <th className="border p-3 text-left text-black font-semibold">Device ID</th>
-                <th className="border p-3 text-left text-black font-semibold">Measurement</th>
-                <th className="border p-3 text-left text-black font-semibold">Timestamp</th>
-                <th className="border p-3 text-left text-black font-semibold">Value</th>
-              </tr>
-            </thead>
-            <tbody>
-              {displayData.map((item, idx) => (
-                <tr key={idx} className="border hover:bg-emerald-700/10 transition-colors">
-                  <td className="border p-3 text-black">{item.id}</td>
-                  <td className="border p-3 text-black">{item.measurement}</td>
-                  <td className="border p-3 text-black">{new Date(item._time).toLocaleString()}</td>
-                  <td className="border p-3 text-black">{item.value}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Pagination Controls */}
-        {filteredData.length > DISPLAY_LIMIT && (
-          <div className="flex items-center justify-between mt-6">
-            <div className="text-sm text-black/60">
-              Page {currentPage} of {totalPages} ({filteredData.length} total records)
-            </div>
-            <div className="flex items-center space-x-2">
-              <button
-                onClick={goToPrevPage}
-                disabled={currentPage === 1}
-                className={`p-2 rounded-lg transition-all duration-300 ${
-                  currentPage === 1 
-                    ? 'text-gray-400 cursor-not-allowed' 
-                    : 'glass-button text-black hover:bg-emerald-500/20'
-                }`}
-              >
-                <ChevronLeft className="w-5 h-5" />
-              </button>
-              
-              {/* Page numbers */}
-              <div className="flex items-center space-x-1">
-                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                  let pageNum;
-                  if (totalPages <= 5) {
-                    pageNum = i + 1;
-                  } else if (currentPage <= 3) {
-                    pageNum = i + 1;
-                  } else if (currentPage >= totalPages - 2) {
-                    pageNum = totalPages - 4 + i;
-                  } else {
-                    pageNum = currentPage - 2 + i;
-                  }
-                  
-                  return (
-                    <button
-                      key={pageNum}
-                      onClick={() => goToPage(pageNum)}
-                      className={`px-3 py-2 rounded-lg transition-all duration-300 ${
-                        currentPage === pageNum
-                          ? 'glass-button text-black'
-                          : 'glass-card text-black hover:bg-emerald-500/20'
-                      }`}
-                    >
-                      {pageNum}
-                    </button>
-                  );
-                })}
-              </div>
-              
-              <button
-                onClick={goToNextPage}
-                disabled={currentPage === totalPages}
-                className={`p-2 rounded-lg transition-all duration-300 ${
-                  currentPage === totalPages 
-                    ? 'text-gray-400 cursor-not-allowed' 
-                    : 'glass-button text-black hover:bg-emerald-500/20'
-                }`}
-              >
-                <ChevronRight className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
-        )}
-
-        {loading && (
-          <div className="flex flex-col items-center mt-6">
-            <span className="mb-4 text-emerald-400 font-semibold text-lg">Loading...</span>
-            <div className="w-1/2 h-3 bg-white/10 rounded-full overflow-hidden">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {sensors.map((sensor) => {
+            const pollutants = getLatestPollutants(sensor, data);
+            const { aqi, pollutant } = calculateAQI(
+              pollutants.nox,
+              pollutants.voc,
+              pollutants.co2,
+              pollutants.benzene
+            );
+            const status = getSensorStatus(aqi);
+            return (
               <div
-                className="h-full w-2/5 bg-gradient-to-r from-emerald-400 to-emerald-600 rounded-full animate-pulse"
-                style={{
-                  animation: 'loadingBarMove 1.5s linear infinite'
-                }}
-              />
+                key={sensor}
+                className={`p-4 border rounded-lg border-blue-400 cursor-pointer hover:shadow-md transition ${
+                  selectedSensor === sensor ? "bg-blue-50 border border-blue-400" : ""
+                }`}
+                onClick={() => setSelectedSensor(sensor)}
+              >
+                <div className="flex justify-between items-center">
+                  <span className="font-semibold text-slate-800">Sensor {sensor}</span>
+                  <span
+                    className={`px-3 py-1 rounded-full text-white text-sm ${status.color}`}
+                  >
+                    {status.label}
+                  </span>
+                </div>
+                <div className="mt-2">
+                  <span className="text-lg font-bold">{aqi}</span> AQI
+                </div>
+                <div className="text-sm text-slate-500">
+                  Dominant: {pollutant}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+        {/* ================= AQI TREND CARD ================= */}
+        <div className="bg-white rounded-3xl shadow border border-blue-400 p-6 flex flex-col">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="text-xl font-bold text-slate-800">
+                AQI Trend {selectedSensor ? `for Sensor ${selectedSensor}` : "(All Sensors)"}
+              </h3>
+              <p className="text-sm text-slate-500">
+                Air Quality Index over time
+              </p>
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                onClick={() => setSelectedTimeRange("24h")}
+                className={`px-4 py-1.5 rounded-full text-sm font-semibold transition ${
+                  selectedTimeRange === "24h"
+                    ? "bg-emerald-500 text-white shadow"
+                    : "bg-slate-200 text-slate-700"
+                }`}
+              >
+                24H
+              </button>
+
+              <button
+                onClick={() => setSelectedTimeRange("7d")}
+                className={`px-4 py-1.5 rounded-full text-sm font-semibold transition ${
+                  selectedTimeRange === "7d"
+                    ? "bg-emerald-500 text-white shadow"
+                    : "bg-slate-200 text-slate-700"
+                }`}
+              >
+                7D
+              </button>
             </div>
           </div>
-        )}
-        
-        {!hasMore && (
-          <div className="text-center mt-6 text-black/60 text-lg">
-          
+
+          <div className="flex-1 h-80 bg-slate-50 rounded-2xl p-4">
+            <Line
+              data={{
+                datasets: [
+                  {
+                    label: "AQI",
+                    data: createHistoricalData(selectedSensor),
+                    borderColor: "#10b981",
+                    backgroundColor: "rgba(16,185,129,0.25)",
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 2,
+                  },
+                ],
+              }}
+              options={{
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                  legend: { display: false },
+                  tooltip: { mode: "index", intersect: false },
+                },
+                scales: {
+                  x: {
+                    type: "time",
+                    time: {
+                      unit: selectedTimeRange === "24h" ? "hour" : "day",
+                      displayFormats: {
+                        hour: "HH:mm",
+                        day: "MMM d",
+                      },
+                    },
+                    title: { display: true, text: "Time" },
+                  },
+                  y: {
+                    min: 0,
+                    max: 300,
+                    title: { display: true, text: "AQI Value" },
+                  },
+                },
+              }}
+            />
           </div>
-        )}
+        </div>
+
+        {/* ================= POLLUTANT TREND CARD ================= */}
+        <div className="bg-white rounded-3xl shadow border border-blue-400 p-6 flex flex-col">
+          <div className="mb-4">
+            <h3 className="text-xl font-bold text-slate-800">
+              Pollutant Levels {selectedSensor ? `for Sensor ${selectedSensor}` : "(All Sensors)"}
+            </h3>
+            <p className="text-sm text-slate-500">
+              Current concentration by type
+            </p>
+          </div>
+
+          <div className="flex-1 h-80 bg-slate-50 rounded-2xl p-4">
+            <Bar
+              data={{
+                labels: ["NOx", "VOC", "CO2", "Benzene"],
+                datasets: [
+                  {
+                    label: "Pollutant Levels",
+                    data: Object.values(displayPollutants),
+                    backgroundColor: [
+                      "#0ea5e9",
+                      "#22c55e",
+                      "#f59e0b",
+                      "#ef4444",
+                    ],
+                    borderRadius: 10,
+                  },
+                ],
+              }}
+              options={{
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                  legend: { display: false },
+                  tooltip: { mode: "index", intersect: false },
+                },
+                scales: {
+                  y: {
+                    beginAtZero: true,
+                    title: { display: true, text: "Concentration" },
+                  },
+                },
+              }}
+            />
+          </div>
+        </div>
       </div>
     </div>
   );
-};
-
-export default Dashboard;
+}

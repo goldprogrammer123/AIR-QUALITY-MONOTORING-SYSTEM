@@ -272,7 +272,7 @@ const AirReport = () => {
       </div>
 
       {dataWarning && (
-        <div className="bg-white shadow-2xl rounded-xl p-6 mb-6 bg-red-500/20">
+        <div className="bg-white shadow-2xl rounded-xl p-6 mb-6 ">
           <div className="flex items-center space-x-3">
             <AlertTriangle className="w-6 h-6 text-red-400" />
             <span className="text-red-400">{dataWarning}</span>

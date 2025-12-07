@@ -1,121 +1,85 @@
-import React from "react";
-import { Link } from "react-router-dom";
 import {
+  Cpu,
+  Download,
+  Home,
   LayoutDashboard,
-  BarChart,
-  MapPin,
-  Activity,
-  FileText,
-  Cloud,
   Lightbulb,
+  LogOut,
+  MapPin,
   TrendingUp,
+  Wind,
 } from "lucide-react";
+import React from "react";
+import { NavLink } from "react-router-dom";
 
-const Sidebar = () => {
+const Sidebar = ({ isOpen, setIsOpen }) => {
+  const navItems = [
+  { name: "System Overview", path: "/overview", icon: <LayoutDashboard size={20} /> },
+  { name: "Dashboard", path: "/dashboard", icon: <Home size={20} /> },
+  { name: "Sensor Devices", path: "/sensors", icon: <Cpu size={20} /> },
+  { name: "Data Export", path: "/data-export", icon: <Download size={20} /> },
+  { name: "Air Report", path: "/air-report", icon: <Wind size={20} /> },
+  { name: "Predictions", path: "/predictions", icon: <TrendingUp size={20} /> },
+  { name: "Sensor Location", path: "/location", icon: <MapPin size={20} /> },
+  { name: "Recommendations", path: "/recommendations", icon: <Lightbulb size={20} /> },
+  { name: "Weather Status", path: "/weather", icon: <Lightbulb size={20} /> },
+
+
+];
+
   return (
-    <div className="w-[280px] glass h-screen p-5 flex flex-col">
-      {/* Logo Section */}
-      <div className="flex items-center justify-center mb-8">
-        <div className="relative">
-          <img
-            src="https://www.aru.ac.tz/site/images/logo.jpg"
-            alt="Logo"
-            className="w-24 h-24 rounded-full border-4 border-emerald-400/30 shadow-2xl hover:scale-105 transition-transform duration-300"
-          />
-          <div className="absolute inset-0 rounded-full bg-gradient-to-br from-emerald-400/20 to-transparent"></div>
+    <>
+      {/* BACKDROP (BELOW HEADER) */}
+      {isOpen && (
+        <div
+          onClick={() => setIsOpen(false)}
+          className="fixed inset-0 bg-black/40 z-40 md:hidden"
+          style={{ top: "72px" }}
+        />
+      )}
+
+      {/*  SIDEBAR BELOW HEADER */}
+      <div
+        className={`fixed left-0 h-screen w-64 bg-white shadow-lg p-6 z-50
+        transition-transform duration-300
+        ${isOpen ? "translate-x-0" : "-translate-x-full"}
+        md:translate-x-0`}
+        style={{ top: "72px" }} 
+      >
+      
+
+        <ul className="space-y-4">
+          {navItems.map((item, index) => (
+            <li key={index}>
+              <NavLink
+                to={item.path}
+                onClick={() => setIsOpen(false)}
+                className={({ isActive }) =>
+                  `flex items-center gap-3 p-3 rounded-lg transition-all
+                  ${
+                    isActive
+                      ? "bg-blue-600 text-white"
+                      : "text-gray-700 hover:bg-gray-200"
+                  }`
+                }
+              >
+                {item.icon}
+                <span>{item.name}</span>
+              </NavLink>
+            </li>
+          ))}
+        </ul>
+
+        <div className="mt-10 pt-5 border-t">
+          <button className="flex items-center gap-3 text-red-600 font-semibold">
+            <LogOut size={20} />
+            Logout
+          </button>
         </div>
       </div>
-
-      {/* Navigation */}
-      <nav className="flex-1 bg-white shadow-2xl">
-        <ul className="space-y-3">
-          <li>
-            <Link
-              to="/overview"
-              className="flex items-center space-x-3 p-4 glass-card rounded-xl hover:bg-emerald-500/20 transition-all duration-300 group"
-            >
-              <Activity
-                size={20}
-                className="text-emerald-400 group-hover:text-black transition-colors"
-              />
-              <span className="text-black font-medium">System Overview</span>
-            </Link>
-          </li>
-          <li>
-            <Link
-              to="/dashboard"
-              className="flex items-center space-x-3 p-4 glass-card rounded-xl hover:bg-emerald-500/20 transition-all duration-300 group"
-            >
-              <LayoutDashboard
-                size={20}
-                className="text-emerald-400 group-hover:text-black transition-colors"
-              />
-              <span className="text-black font-medium">Dashboard</span>
-            </Link>
-          </li>
-          <li>
-            <Link
-              to="/air-report"
-              className="flex items-center space-x-3 p-4 glass-card rounded-xl hover:bg-emerald-500/20 transition-all duration-300 group"
-            >
-              <TrendingUp
-                size={20}
-                className="text-emerald-400 group-hover:text-black transition-colors"
-              />
-              <span className="text-black font-medium">Air Report</span>
-            </Link>
-          </li>
-          <li>
-            <Link
-              to="/recommendations"
-              className="flex items-center space-x-3 p-4 glass-card rounded-xl hover:bg-emerald-500/20 transition-all duration-300 group"
-            >
-              <Lightbulb
-                size={20}
-                className="text-emerald-400 group-hover:text-black transition-colors"
-              />
-              <span className="text-black font-medium">Recommendations</span>
-            </Link>
-          </li>
-          <li>
-            <Link
-              to="/weather"
-              className="flex items-center space-x-3 p-4 glass-card rounded-xl hover:bg-emerald-500/20 transition-all duration-300 group"
-            >
-              <Cloud
-                size={20}
-                className="text-emerald-400 group-hover:text-black transition-colors"
-              />
-              <span className="text-black font-medium">Weather Status</span>
-            </Link>
-          </li>
-          <li>
-            <Link
-              to="/location"
-              className="flex items-center space-x-3 p-4 glass-card rounded-xl hover:bg-emerald-500/20 transition-all duration-300 group"
-            >
-              <MapPin
-                size={20}
-                className="text-emerald-400 group-hover:text-black transition-colors"
-              />
-              <span className="text-black font-medium">Sensor Locations</span>
-            </Link>
-          </li>
-        </ul>
-      </nav>
-
-      {/* Logout Button */}
-      <div className="mt-auto">
-        <Link
-          to="/"
-          className="flex items-center space-x-3 p-4 glass-button rounded-xl text-black font-medium transition-all duration-300"
-        >
-          <FileText size={20} />
-          <span>Back Home</span>
-        </Link>
-      </div>
-    </div>
+    </>
   );
 };
 
 export default Sidebar;
+

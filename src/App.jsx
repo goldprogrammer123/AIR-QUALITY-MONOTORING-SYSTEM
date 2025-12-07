@@ -9,6 +9,9 @@ import WeatherStatus from "./Pages/WeatherStatus";
 import Location from "./Pages/location";
 import SystemOverview from "./Pages/SystemOverview";
 import Home from "./Components/Home";
+import DataExport from "./Pages/DataExport";
+import Prediction from "./Pages/Prediction";
+import SensorDevices from "./Pages/SensorDevices";
 
 
 const App = () => {
@@ -18,7 +21,7 @@ const App = () => {
         {/* Public Route */}
        <Route path="/" element={<Home />} />
 
-        {/* Protected Routes with Sidebar */}
+        {/*Routes with Sidebar */}
         <Route path="" element={<MainLayout />}>
           <Route path="overview" element={<SystemOverview />} />
           <Route path="dashboard" element={<Dashboard />} />
@@ -26,6 +29,9 @@ const App = () => {
           <Route path="recommendations" element={<Recommendations />} />
           <Route path="weather" element={<WeatherStatus />} />
           <Route path="location" element={<Location />} />
+          <Route path="data-export" element={<DataExport />} />
+          <Route path="predictions" element={<Prediction />} />
+          <Route path="sensors" element={<SensorDevices />} />
         </Route>
       </Routes>
     </Router>

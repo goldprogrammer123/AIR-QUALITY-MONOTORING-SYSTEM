@@ -1,18 +1,22 @@
-import React from "react";
+import React, { useState } from "react";
 import { Outlet } from "react-router-dom";
 import Sidebar from "./Sidebar";
+import Header from "./Header";
 
 const MainLayout = () => {
+  const [isOpen,setIsOpen]= useState(false)
   return (
-    <div className="flex min-h-screen bg-[#f4f4f4]">
+    <div className="flex min-h-screen bg-gray-100">
       {/* Sidebar */}
-      <div className="w-64 h-screen sticky top-0">
-        <Sidebar />
-      </div>
+     
+        <Sidebar isOpen={isOpen}  setIsOpen={setIsOpen}/>
+      
+      {/* header */}
+      <div className="flex-1 md:ml-64">
+        <Header isOpen={isOpen} setIsOpen={setIsOpen} />
 
-      {/* Main Content */}
-      <div className="flex-1 p-6 overflow-auto">
-        <div className="bg-blue rounded-xl p-6 min-h-full">
+        {/* CONTENT RENDERS HERE */}
+        <div className="pt-[90px] p-6">
           <Outlet />
         </div>
       </div>
