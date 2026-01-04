@@ -1,0 +1,31 @@
+# Stage 1: Build the Vite frontend
+FROM node:20 AS builder
+
+WORKDIR /app
+
+# Copy package.json and install dependencies
+COPY package*.json ./
+RUN npm install
+
+# Copy frontend source code
+COPY . .
+
+# Build the production-ready frontend
+RUN npm run build
+
+# Stage 2: Serve the static files with a small Node.js server
+FROM node:20
+
+WORKDIR /app
+
+# Install "serve" globally (tiny Node.js web server)
+RUN npm install -g serve
+
+# Copy built frontend from builder stage
+COPY --from=builder /app/dist .
+
+# Expose port 5000 for the frontend server
+EXPOSE 5000
+
+# Start the server
+CMD ["serve", "-s", ".", "-l", "5000"]

@@ -1,0 +1,163 @@
+@import "tailwindcss";
+
+/* Custom CSS Variables for Emerald Green Theme */
+:root {
+  --emerald-primary: #10b981;
+  --emerald-secondary: #059669;
+  --emerald-dark: #047857;
+  --emerald-light: #34d399;
+  --glass-bg: rgba(255, 255, 255, 0.1);
+  --glass-border: rgba(255, 255, 255, 0.2);
+  --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+}
+
+/* Global Glass Morphism Styles */
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+.glass-button {
+  background: linear-gradient(135deg, var(--emerald-primary), var(--emerald-secondary));
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 16px rgba(16, 185, 129, 0.3);
+  transition: all 0.3s ease;
+}
+
+.glass-button:hover {
+  background: linear-gradient(135deg, var(--emerald-secondary), var(--emerald-dark));
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+}
+
+.glass-button:active {
+  transform: translateY(0);
+}
+
+/* Background gradient for the entire app - Emerald theme */
+body {
+  background: linear-gradient(135deg, #064e3b 0%, #065f46 50%, #047857 100%);
+  min-height: 100vh;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--emerald-primary);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--emerald-secondary);
+}
+
+/* Loading animation */
+@keyframes loadingBarMove {
+  0% { left: -40%; }
+  100% { left: 100%; }
+}
+
+/* Glass morphism table styles */
+.glass-table {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.glass-table th {
+  background: rgba(16, 185, 129, 0.2);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.glass-table td {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.glass-table tr:hover {
+  background: rgba(16, 185, 129, 0.1);
+}
+
+/* Chart container glass effect */
+.chart-container {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 20px;
+}
+
+/* AQI Status Colors */
+.aqi-good {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+}
+
+.aqi-moderate {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: white;
+}
+
+.aqi-unhealthy {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: white;
+}
+
+.aqi-very-unhealthy {
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+  color: white;
+}
+
+.aqi-hazardous {
+  background: linear-gradient(135deg, #7f1d1d, #991b1b);
+  color: white;
+}
+
+/* Weather card styles */
+.weather-card {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 16px;
+}
+
+/* Recommendation card styles */
+.recommendation-card {
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  transition: all 0.3s ease;
+}
+
+.recommendation-card:hover {
+  background: rgba(16, 185, 129, 0.1);
+  transform: translateY(-2px);
+}
