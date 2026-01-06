@@ -11,7 +11,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cors());
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 2000;
 
 // Connect to MySQL
 const db = mysql.createConnection({
@@ -49,9 +49,9 @@ const id = "important..."
 
 
 writeApi.queryRows(`
-  from(bucket: "live")
+  from(bucket: "mybucket")
   |> range(start: -10000000h)
-  |> filter(fn: (r) => r["_measurement"] == "ardhi")
+  |> filter(fn: (r) => r["_measurement"] =="VOC" or r["_measurement"] == "RawHumidity" or r["_measurement"] == "Pressure" or r["_measurement"] == "RawTemperature" or r["_measurement"] == "AbsoluteHumidity" or r["_measurement"] == "AirQualityScore" or r["_measurement"] == "BatteryPercentage" or r["_measurement"] == "GasResistance" or r["_measurement"] == "WeatherVibes" or r["_measurement"] == "StabaStatus")
   |> pivot(rowKey: ["_time"], columnKey: ["_field"], valueColumn: "_value")
   |> filter(fn: (r) => r["id"] == "${id}")
   |> keep(columns: ["id", "measurement", "value", "_time"])  
@@ -75,12 +75,12 @@ app.get('/influx', (req, res) => {
   
   client.getQueryApi(org).queryRows(
     `
-    from(bucket: "live")
+    from(bucket: "mybucket")
     |> range(start: -10000000h)
-    |> filter(fn: (r) => r["_measurement"] == "ardhi")
+    |> filter(fn: (r) => r["_measurement"] == "VOC" or r["_measurement"] == "RawHumidity" or r["_measurement"] == "Pressure" or r["_measurement"] == "RawTemperature" or r["_measurement"] == "AbsoluteHumidity" or r["_measurement"] == "AirQualityScore" or r["_measurement"] == "BatteryPercentage" or r["_measurement"] == "GasResistance" or r["_measurement"] == "WeatherVibes" or r["_measurement"] == "StabaStatus")
     |> pivot(rowKey: ["_time"], columnKey: ["_field"], valueColumn: "_value")
     |> filter(fn: (r) => r["id"] != "")
-    |> keep(columns: ["id", "measurement", "value", "_time"])
+    |> keep(columns: ["id", "_measurement", "_value", "_time"])
     |> sort(columns: ["_time"], desc: true)
      |> limit(n: ${limit}, offset: ${(page - 1) * limit})
     `,

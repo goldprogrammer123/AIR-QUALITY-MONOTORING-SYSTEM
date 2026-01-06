@@ -82,7 +82,7 @@ const getLatestPollutants = (sensorId, dataSubset = data) => {
 // FIXED: Inside fetchAirData — the part that was crashing
 const fetchAirData = async () => {
   const result = await fetchWithCache(
-    "/api/sensordata/?format=json",
+    "http://localhost:2000/influxdb/history?hours=1&limit=100",  // ← updated port
     "dashboard_data"
   );
 

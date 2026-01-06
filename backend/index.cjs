@@ -1,60 +1,121 @@
-const { Pool } = require('pg');
-const express = require("express");
-const cors = require("cors");
-const dotenv = require("dotenv");
-const mysql = require("mysql2");
 
-dotenv.config();
-const app = express();
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(cors());
 
-const PORT = 3000;
+require('dotenv').config()
+const express = require('express')
+const cors = require('cors')
+const { InfluxDB } = require('@influxdata/influxdb-client')
 
-// PostgreSQL connection pool
-const pool = new Pool({
-  connectionString: process.env.POSTGRES_URL,
-});
+const app = express()
+app.use(cors())
+app.use(express.json())
 
-pool.connect((err) => {
-  if (err) {
-    console.error('❌ Connection error', err.stack);
-  } else {
-    console.log('✅ Connected to PostgreSQL');
-  }
-});
+const PORT = 2000
+
+//  InfluxDB Client (CORRECT)
+const influxDB = new InfluxDB({
+  url: process.env.INFLUX_URL,
+  token: process.env.INFLUX_TOKEN,
+})
+
+const queryApi = influxDB.getQueryApi(process.env.INFLUX_ORG)
+
+console.log('INFLUX_URL =', process.env.INFLUX_URL)
+console.log('INFLUX_ORG =', process.env.INFLUX_ORG)
+console.log('INFLUX_BUCKET =', process.env.INFLUX_BUCKET)
+
+
+
+console.log(' InfluxDB client initialized')
+
 
 /**
- * ✅ Optimized PostgreSQL Pagination (30 per page)
- * Use: /pg?page=1
+ * API: Get latest air quality data
+ * URL: /influxdb/latest
  */
-app.get('/pg', async (req, res) => {
-  const page = parseInt(req.query.page) || 1;
-  const limit = parseInt(req.query.limit) || 30; // allow limit from query
-  const offset = (page - 1) * limit;
+app.get('/influxdb/latest', async (req, res) => {
+  const query = `
+    from(bucket: "${process.env.INFLUX_BUCKET}")
+      |> range(start: -10m)
+      |> filter(fn: (r) => r._measurement == "VOC" or r._measurement == "RawHumidity" or r._measurement == "Pressure" or r._measurement == "RawTemperature" or r._measurement == "AbsoluteHumidity" or r._measurement == "AirQualityScore" or r._measurement == "BatteryPercentage" or r._measurement == "GasResistance" or r._measurement == "WeatherVibes" or r._measurement == "StabaStatus")
+      |> last()
+  `
+
+  const data = []
 
   try {
-    const result = await pool.query(
-      'SELECT * FROM your_table_name ORDER BY received_at DESC LIMIT $1 OFFSET $2',
-      [limit, offset]
-    );
-    const data = result.rows;
-    res.json({
-      data,
-      pagination: {
-        page,
-        limit,
-        hasMore: data.length === limit,
-      },
-    });
+    await queryApi.collectRows(query, row => {
+      data.push(row)
+    })
+    res.json(data)
   } catch (err) {
-    console.error('❌ PostgreSQL Query Error:', err.message);
-    res.status(500).json({ error: err.message });
+    console.error('Influx Query Error:', err.message)
+    res.status(500).json({ error: err.message })
+  }
+})
+
+/**
+ * API: Historical data with pagination-like limit
+ * URL: /influxdb/history?hours=24&limit=100
+ */
+app.get('/influxdb/history', async (req, res) => {
+  const hours = req.query.hours || 24;
+  const limit = req.query.limit || 100;
+
+  const query = `
+    from(bucket: "${process.env.INFLUX_BUCKET}")
+      |> range(start: -${hours}h)
+      |> filter(fn: (r) => r._measurement == "VOC" or r._measurement == "RawHumidity" or r._measurement == "Pressure" or r._measurement == "RawTemperature" or r._measurement == "AbsoluteHumidity" or r._measurement == "AirQualityScore" or r._field == "BatteryPercentage" or r._field == "GasResistance" or r._field == "WeatherVibes" or r._measurement == "StabaStatus")
+      |> sort(columns: ["_time"], desc: true)
+      |> drop(columns: ["_start", "_stop", "host", "topic", "result", "table"])
+      |> limit(n: ${limit})
+  `;
+
+  let results = [];
+  try {
+    await queryApi.collectRows(query, (row) => {
+      results.push(row);
+    });
+    res.json(results);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Error fetching data');
   }
 });
+
+ 
+/**
+ *  API: Average values for dashboard cards
+ * URL: /influxdb/avg
+ */
+app.get('/influxdb/avg', async (req, res) => {
+  const query = `
+    from(bucket: "${process.env.INFLUX_BUCKET}")
+      |> range(start: -1h)
+      |> filter(fn: (r) => r._measurement == "airquality")
+      |> mean()
+  `
+
+  const data = []
+
+  try {
+    await queryApi.collectRows(query, row => {
+      data.push(row)
+    })
+    res.json(data)
+  } catch (err) {
+    console.error(' Influx Query Error:', err.message)
+    res.status(500).json({ error: err.message })
+  }
+})
+
+/**
+ *  Health check
+ */
+app.get('/', (req, res) => {
+  res.send('InfluxDB API running')
+})
 
 // Start server
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-});
+  console.log(` Server running on port ${PORT}`)
+})
