@@ -11,7 +11,7 @@ app.use(express.json())
 
 const PORT = 2000
 
-// ✅ InfluxDB Client (CORRECT)
+//  InfluxDB Client (CORRECT)
 const influxDB = new InfluxDB({
   url: process.env.INFLUX_URL,
   token: process.env.INFLUX_TOKEN,
@@ -25,11 +25,11 @@ console.log('INFLUX_BUCKET =', process.env.INFLUX_BUCKET)
 
 
 
-console.log('✅ InfluxDB client initialized')
+console.log(' InfluxDB client initialized')
 
 
 /**
- * ✅ API: Get latest air quality data
+ * API: Get latest air quality data
  * URL: /influxdb/latest
  */
 app.get('/influxdb/latest', async (req, res) => {
@@ -48,13 +48,13 @@ app.get('/influxdb/latest', async (req, res) => {
     })
     res.json(data)
   } catch (err) {
-    console.error('❌ Influx Query Error:', err.message)
+    console.error('Influx Query Error:', err.message)
     res.status(500).json({ error: err.message })
   }
 })
 
 /**
- * ✅ API: Historical data with pagination-like limit
+ * API: Historical data with pagination-like limit
  * URL: /influxdb/history?hours=24&limit=100
  */
 app.get('/influxdb/history', async (req, res) => {
@@ -84,7 +84,7 @@ app.get('/influxdb/history', async (req, res) => {
 
  
 /**
- * ✅ API: Average values for dashboard cards
+ *  API: Average values for dashboard cards
  * URL: /influxdb/avg
  */
 app.get('/influxdb/avg', async (req, res) => {
@@ -103,19 +103,19 @@ app.get('/influxdb/avg', async (req, res) => {
     })
     res.json(data)
   } catch (err) {
-    console.error('❌ Influx Query Error:', err.message)
+    console.error(' Influx Query Error:', err.message)
     res.status(500).json({ error: err.message })
   }
 })
 
 /**
- * ✅ Health check
+ *  Health check
  */
 app.get('/', (req, res) => {
-  res.send('🚀 InfluxDB API running')
+  res.send('InfluxDB API running')
 })
 
 // Start server
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`)
+  console.log(` Server running on port ${PORT}`)
 })
