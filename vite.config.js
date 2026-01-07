@@ -12,6 +12,11 @@ export default defineConfig({
         target: 'https://ttn-postgres-1.onrender.com',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, '/api')
+      },
+      '/influx': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/influx/, '/influx')
       }
     }
   }

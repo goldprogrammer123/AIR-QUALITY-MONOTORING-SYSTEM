@@ -30,22 +30,23 @@ const Dashboard = () => {
     try {
       const cacheKey = `dashboard_page_${pageNum}`;
       const result = await fetchWithCache(
-        `/api/sensordata/?format=json`,
+        `/influx?page=${pageNum}&limit=${PAGE_LIMIT}&startTime=-24h`,
         cacheKey
       );
 
-      // The API returns an array directly, not an object with a 'data' property.
-      const processedData = (result || []).flatMap((item) =>
-        (item.measurements || []).map((measurement) => ({
-          id: item.device_id,
-          measurement: measurement.name,
-          value:
-            typeof measurement.value === "number"
-              ? Number(measurement.value.toFixed(6))
-              : measurement.value,
-          _time: item.received_at,
-        }))
-      );
+      // The API returns an object with 'data' property containing the array
+      const apiData = result?.data || result || [];
+      
+      // Transform data to match Dashboard format (already in correct format from /influx endpoint)
+      const processedData = apiData.map((item) => ({
+        id: item.id || 'unknown',
+        measurement: item.measurement || 'unknown',
+        value:
+          typeof item.value === "number"
+            ? Number(item.value.toFixed(6))
+            : item.value,
+        _time: item._time || new Date().toISOString(),
+      }));
 
       // Deduplicate based on _time and measurement
       const uniqueData = processedData.filter((item) => {
@@ -63,10 +64,22 @@ const Dashboard = () => {
       ];
       setDeviceIds(uniqueDevices);
 
-      // Since the API doesn't provide pagination info, we'll assume there's more data if we received a full page.
-      setHasMore(processedData.length === PAGE_LIMIT);
+      // Check if there's more data based on pagination info
+      const hasMoreData = result?.pagination?.hasMore || processedData.length === PAGE_LIMIT;
+      setHasMore(hasMoreData);
     } catch (error) {
       console.error("Error fetching data:", error);
+      console.error("Error details:", {
+        message: error.message,
+        url: `/influx?page=${pageNum}&limit=${PAGE_LIMIT}&startTime=-24h`,
+        page: pageNum
+      });
+      setHasMore(false); // Stop trying if there's an error
+      
+      // Show user-friendly error message
+      if (error.message.includes('Failed to connect')) {
+        alert('⚠️ Backend server is not running!\n\nPlease start the backend server:\nnode backend/backend.cjs');
+      }
     } finally {
       setLoading(false);
     }

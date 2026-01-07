@@ -103,9 +103,27 @@ export const fetchWithCache = async (url, cacheKey = url, cacheTime = CACHE_DURA
   }
 
   // ✅ 3. Fetch from server if no valid cache
-  const response = await fetch(url);
-  if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-  const data = await response.json();
+  let response;
+  try {
+    response = await fetch(url);
+  } catch (error) {
+    console.error('Network error fetching:', url, error);
+    throw new Error(`Failed to connect to server. Make sure the backend is running on port 5000. Error: ${error.message}`);
+  }
+  
+  if (!response.ok) {
+    const errorText = await response.text().catch(() => 'Unknown error');
+    console.error(`HTTP error ${response.status} for ${url}:`, errorText);
+    throw new Error(`HTTP error! Status: ${response.status}. ${errorText.substring(0, 100)}`);
+  }
+  
+  let data;
+  try {
+    data = await response.json();
+  } catch (error) {
+    console.error('Failed to parse JSON response:', error);
+    throw new Error(`Invalid JSON response from server: ${error.message}`);
+  }
 
   // Store in memory cache
   memoryCache = { timestamp: now, data };

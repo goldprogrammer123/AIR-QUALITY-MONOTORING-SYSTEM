@@ -12,7 +12,7 @@ const Recommendations = () => {
   const [dataWarning, setDataWarning] = useState('');
 
   // Toggle to switch between API and mock data (set to false to try API)
-  const USE_MOCK_DATA = true;
+  const USE_MOCK_DATA = false;
 
   const mockData = {
     data: [
@@ -31,7 +31,7 @@ const Recommendations = () => {
         result = mockData;
         console.log('Recommendations - Using mock data:', result.data);
       } else {
-        result = await fetchWithCache('http://localhost:3000/influx', 'recommendations', { bypassCache: true });
+        result = await fetchWithCache('http://localhost:5000/influx', 'recommendations', { bypassCache: true });
         console.log('Recommendations - Fetched data from API:', result.data);
       }
 
