@@ -6,7 +6,9 @@ const cors = require("cors");
 const dotenv = require("dotenv");
 const mysql = require("mysql2");
 
-dotenv.config();
+// Load .env from parent directory (project root)
+const path = require('path');
+dotenv.config({ path: path.join(__dirname, '..', '.env') });
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cors());
@@ -31,14 +33,20 @@ const bucket = process.env.INFLUX_BUCKET;
 
 const client = new InfluxDB({ url, token });
 
-//MySQL database connection is established
+//MySQL database connection - make it optional
+let mysqlConnected = false;
 db.connect((err) => {
   if (err) {
-    throw err;
+    mysqlConnected = false;
+    // Only show warning if MySQL is actually configured
+    if (process.env.MYSQL_HOST && process.env.MYSQL_HOST !== 'localhost') {
+      console.warn('⚠️  MySQL connection failed (optional):', err.message);
+      console.warn('   MySQL endpoints will not work, but InfluxDB endpoints will function.');
+    }
   } else {
-    // No error, proceed
+    mysqlConnected = true;
+    console.log("✅ Connected to MySQL");
   }
-  console.log("Connected to MySQL");
 });
 
 
@@ -253,5 +261,15 @@ app.get("/location", (_req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`\n🚀 Server running on port ${PORT}`);
+  console.log(`\n📋 Available endpoints:`);
+  console.log(`   GET  http://localhost:${PORT}/health          - Health check`);
+  console.log(`   GET  http://localhost:${PORT}/influx         - InfluxDB data (with pagination)`);
+  console.log(`   GET  http://localhost:${PORT}/influx/test    - Test InfluxDB connection`);
+  console.log(`   GET  http://localhost:${PORT}/sensors        - MySQL sensors (requires MySQL)`);
+  console.log(`\n💡 Example queries:`);
+  console.log(`   http://localhost:${PORT}/influx?limit=10`);
+  console.log(`   http://localhost:${PORT}/influx?startTime=-1h&limit=100`);
+  console.log(`   http://localhost:${PORT}/influx?measurement=ardhi&limit=10`);
+  console.log(`\n`);
 });

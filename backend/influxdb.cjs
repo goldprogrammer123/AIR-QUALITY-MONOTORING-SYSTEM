@@ -1,10 +1,10 @@
 const { InfluxDB, Point } = require('@influxdata/influxdb-client')
 
 // InfluxDB Config
-const url = 'https://influxdb.projectdar.aplab.be'
-const token = 'FI-RixLBRtcx3zhqS9IylLA-bmGmjHJ304oDAuWlFjlltaxsl3MksRjtaYCzruRMDZJ-ePZUjzE8k07NTwLHvA=='
-const org = 'ac73491f5a717267'
-const bucket = 'live'
+const url = 'http://89.168.93.160:8086'
+const token = 'THIVVNQQSSjnW22eADNrJ6QCY7VXNazzz9WKhNmEGfghTBjq9Q8EdMSqbHUl7eu2XSYR4kvi1R_TUookQeC3zQ=='
+const org = 'myorg'
+const bucket = 'mybucket'
 
 // Create client and write API
 const client = new InfluxDB({ url, token })
