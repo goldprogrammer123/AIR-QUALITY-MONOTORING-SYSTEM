@@ -7,85 +7,53 @@ const Recommendations = () => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentAQI, setCurrentAQI] = useState(0);
-  const [aqiStatus, setAqiStatus] = useState('Good');
   const [dominantPollutant, setDominantPollutant] = useState('None');
   const [dataWarning, setDataWarning] = useState('');
-
-  // Toggle to switch between API and mock data (set to false to try API)
-  const USE_MOCK_DATA = false;
-
-  const mockData = {
-    data: [
-      { measurement: "NOx", value: 0.05, _time: "2025-06-26T18:04:32.07Z", id: "ardhi-bme-280" },
-      { measurement: "VOC", value: 50, _time: "2025-06-26T18:04:16.758Z", id: "bme680-ph-dox-full-sensor-test" },
-      { measurement: "CO2", value: 212.1, _time: "2025-06-26T18:04:32.069Z", id: "ardhi-bme-280" },
-      { measurement: "Benzene", value: 0.01, _time: "2025-06-26T18:04:32.073Z", id: "ardhi-bme-280" }
-    ]
-  };
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      let result;
-      if (USE_MOCK_DATA) {
-        result = mockData;
-        console.log('Recommendations - Using mock data:', result.data);
-      } else {
-        result = await fetchWithCache('http://localhost:5000/influx', 'recommendations', { bypassCache: true });
-        console.log('Recommendations - Fetched data from API:', result.data);
-      }
+      const result = await fetchWithCache(
+        'http://localhost:3000/influx',
+        'recommendations',
+        { bypassCache: true }
+      );
 
       if (!result.data || !Array.isArray(result.data)) {
         throw new Error('Invalid data format: data is not an array');
       }
+
       setData(result.data);
 
       if (result.data.length > 0) {
         const pollutantData = extractPollutantData(result.data);
-        console.log('Recommendations - Extracted pollutants:', pollutantData);
         const { aqi, pollutant } = calculateAQI(
           pollutantData.nox,
           pollutantData.voc,
           pollutantData.co2,
           pollutantData.benzene
         );
-        console.log('Recommendations - Calculated AQI:', { aqi, pollutant });
         setCurrentAQI(aqi);
         setDominantPollutant(pollutant);
-        setAqiStatus(getAQIStatus(aqi).status);
-        setDataWarning(pollutantData.nox === 0 && pollutantData.voc === 0 && 
-                       pollutantData.co2 === 0 && pollutantData.benzene === 0 
-          ? 'No pollutant data found' : '');
+        setDataWarning(
+          pollutantData.nox === 0 &&
+          pollutantData.voc === 0 &&
+          pollutantData.co2 === 0 &&
+          pollutantData.benzene === 0
+            ? 'No pollutant data found'
+            : ''
+        );
       } else {
         setDataWarning('No data received from API');
       }
     } catch (error) {
-      console.error('Recommendations - Error fetching data:', error.message, error);
-      // Fallback to mock data if API fails
-      if (!USE_MOCK_DATA) {
-        console.log('Recommendations - Falling back to mock data');
-        result = mockData;
-        setData(result.data);
-        const pollutantData = extractPollutantData(result.data);
-        console.log('Recommendations - Extracted pollutants (mock):', pollutantData);
-        const { aqi, pollutant } = calculateAQI(
-          pollutantData.nox,
-          pollutantData.voc,
-          pollutantData.co2,
-          pollutantData.benzene
-        );
-        console.log('Recommendations - Calculated AQI (mock):', { aqi, pollutant });
-        setCurrentAQI(aqi);
-        setDominantPollutant(pollutant);
-        setAqiStatus(getAQIStatus(aqi).status);
-        setDataWarning('');
-      } else {
-        setDataWarning(`Error fetching data: ${error.message}`);
-      }
+      console.error('Error fetching data:', error.message);
+      setDataWarning(`Error fetching data: ${error.message}`);
     } finally {
       setLoading(false);
     }
   };
+
 
   useEffect(() => {
     fetchData();
