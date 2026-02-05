@@ -1,17 +1,14 @@
 import { defineConfig } from 'vite'
 import tailwindcss from '@tailwindcss/vite'
 
-// https://vite.dev/config/
 export default defineConfig({
-  plugins: [
-    tailwindcss()
-  ],
+  plugins: [tailwindcss()],
   server: {
     proxy: {
       '/api': {
-        target: 'https://ttn-postgres-1.onrender.com',
+        target: 'http://localhost:3000',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, '/api')
+        secure: false,
       }
     }
   }

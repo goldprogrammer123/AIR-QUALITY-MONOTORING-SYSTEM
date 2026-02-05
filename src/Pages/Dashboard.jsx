@@ -23,54 +23,62 @@ const Dashboard = () => {
   // Pagination state for display
   const [currentPage, setCurrentPage] = useState(1);
   const [displayData, setDisplayData] = useState([]);
+  const BACKEND_URL = "http://localhost:3000"; 
+
 
   // Fetch a page of data from backend
-  const fetchDataPage = async (pageNum) => {
-    setLoading(true);
-    try {
-      const cacheKey = `dashboard_page_${pageNum}`;
-      const result = await fetchWithCache(
-        `/api/sensordata/?format=json`,
-        cacheKey
-      );
+  // Fetch a page of data from backend
+const fetchDataPage = async (pageNum) => {
+  setLoading(true);
+  try {
+    const cacheKey = `dashboard_page_${pageNum}`;
+    const limit = PAGE_LIMIT; // your items per page
+    const days = 30; // 
+    // Call the correct backend endpoint with query params
+  const result = await fetchWithCache(
+  `${BACKEND_URL}/influx?page=${pageNum}&limit=${limit}&days=${days}`,
+  cacheKey
+);
 
-      // The API returns an array directly, not an object with a 'data' property.
-      const processedData = (result || []).flatMap((item) =>
-        (item.measurements || []).map((measurement) => ({
-          id: item.device_id,
-          measurement: measurement.name,
-          value:
-            typeof measurement.value === "number"
-              ? Number(measurement.value.toFixed(6))
-              : measurement.value,
-          _time: item.received_at,
+
+    // The backend returns { data: [...], pagination: {...} }
+    const rawData = result?.data || [];
+
+    // Flatten data into a uniform format
+    const processedData = rawData.flatMap(item =>
+      Object.keys(item)
+        .filter(key => key !== "_time") // exclude _time
+        .map(key => ({
+          id: item.id || "ardhi-bme-280",      // add id if exists
+          measurement: key,
+          value: item[key],
+          _time: item._time
         }))
-      );
+    );
 
-      // Deduplicate based on _time and measurement
-      const uniqueData = processedData.filter((item) => {
-        const key = `${item._time}-${item.measurement}`;
-        return !allData.some(
-          (prevItem) => `${prevItem._time}-${prevItem.measurement}` === key
-        );
-      });
+    // Deduplicate based on _time and measurement
+    const uniqueData = processedData.filter(item => {
+      const key = `${item._time}-${item.measurement}`;
+      return !allData.some(prev => `${prev._time}-${prev.measurement}` === key);
+    });
 
-      setAllData((prev) => [...prev, ...uniqueData]);
+    // Update state
+    setAllData(prev => [...prev, ...uniqueData]);
 
-      // Update device IDs after new data loaded
-      const uniqueDevices = [
-        ...new Set([...allData, ...uniqueData].map((item) => item.id)),
-      ];
-      setDeviceIds(uniqueDevices);
+    // Update device IDs
+    const uniqueDevices = [...new Set([...allData, ...uniqueData].map(d => d.id))];
+    setDeviceIds(uniqueDevices);
 
-      // Since the API doesn't provide pagination info, we'll assume there's more data if we received a full page.
-      setHasMore(processedData.length === PAGE_LIMIT);
-    } catch (error) {
-      console.error("Error fetching data:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    // Pagination info from backend
+    setHasMore(result.pagination?.hasMore || false);
+
+  } catch (error) {
+    console.error("Error fetching data:", error);
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   // Initial load & load on page change
   useEffect(() => {

@@ -80,7 +80,6 @@ const clearOldCache = () => {
 export const fetchWithCache = async (url, cacheKey = url, cacheTime = CACHE_DURATION) => {
   const now = Date.now();
 
-  // ✅ 1. Check in-memory cache first
   if (
     memoryCache.timestamp &&
     memoryCache.data &&
@@ -89,7 +88,7 @@ export const fetchWithCache = async (url, cacheKey = url, cacheTime = CACHE_DURA
     return memoryCache.data;
   }
 
-  // ✅ 2. Check localStorage cache next
+
   try {
     const cached = localStorage.getItem(cacheKey);
     const cachedAt = localStorage.getItem(`${cacheKey}_at`);
@@ -102,7 +101,7 @@ export const fetchWithCache = async (url, cacheKey = url, cacheTime = CACHE_DURA
     console.warn('Failed to read from localStorage cache:', error);
   }
 
-  // ✅ 3. Fetch from server if no valid cache
+
   const response = await fetch(url);
   if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
   const data = await response.json();

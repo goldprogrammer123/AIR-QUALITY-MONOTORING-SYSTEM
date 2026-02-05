@@ -11,9 +11,9 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cors());
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 3000;
 
-// Connect to MySQL
+// // Connect to MySQL
 const db = mysql.createConnection({
   host: process.env.MYSQL_HOST,
   user: process.env.MYSQL_USER,
@@ -23,10 +23,11 @@ const db = mysql.createConnection({
 
 //connect to influxdb
 
-const url = process.env.INFLUXDB_URL; 
- const token = process.env.INFLUXDB_TOKEN; 
-const org = process.env.INFLUXDB_ORG; 
-const bucket = process.env.INFLUXDB_BUCKET; 
+const url = process.env.INFLUX_URL;
+const token = process.env.INFLUX_TOKEN;
+const org = process.env.INFLUX_ORG;
+const bucket = process.env.INFLUX_BUCKET;
+
 
 const client = new InfluxDB({ url, token });
 
@@ -48,80 +49,115 @@ const writeApi = client.getQueryApi(org, bucket)
 const id = "important..."
 
 
-writeApi.queryRows(`
-  from(bucket: "live")
-  |> range(start: -10000000h)
-  |> filter(fn: (r) => r["_measurement"] == "ardhi")
-  |> pivot(rowKey: ["_time"], columnKey: ["_field"], valueColumn: "_value")
-  |> filter(fn: (r) => r["id"] == "${id}")
-  |> keep(columns: ["id", "measurement", "value", "_time"])  
-`, {
-  next(row, tableMeta) {
-    const o = tableMeta.toObject(row)
-    console.log(o)
-  },
-  error(e) {
-    console.error(e)
-  },
-  complete(){
-    console.log("finished")
-  }
-})
+// writeApi.queryRows(`
+//   from(bucket: "mybucket")
+//   |> range(start: -10000000h)
+//   |> filter(fn: (r) => r["_measurement"] == "ardhi")
+//   |> pivot(rowKey: ["_time"], columnKey: ["_field"], valueColumn: "_value")
+//   |> filter(fn: (r) => r["id"] == "${id}")
+//   |> keep(columns: ["id", "measurement", "value", "_time"])  
+// `, {
+//   next(row, tableMeta) {
+//     const o = tableMeta.toObject(row)
+//     console.log(o)
+//   },
+//   error(e) {
+//     console.error(e)
+//   },
+//   complete(){
+//     console.log("finished")
+//   }
+// })
 
-app.get('/influx', (req, res) => {
-  const page = parseInt(req.query.page) || 1;
-  const limit = parseInt(req.query.limit) || 1000000; // Increased limit per page
-  const data = [];
-  
-  client.getQueryApi(org).queryRows(
-    `
-    from(bucket: "live")
-    |> range(start: -10000000h)
-    |> filter(fn: (r) => r["_measurement"] == "ardhi")
-    |> pivot(rowKey: ["_time"], columnKey: ["_field"], valueColumn: "_value")
-    |> filter(fn: (r) => r["id"] != "")
-    |> keep(columns: ["id", "measurement", "value", "_time"])
-    |> sort(columns: ["_time"], desc: true)
-     |> limit(n: ${limit}, offset: ${(page - 1) * limit})
-    `,
-    {
+app.get('/influx', async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 100;
+    const days = parseInt(req.query.days) || 30;
+
+    const measurements = [
+      "AbsoluteHumidity",
+      "AirQualityScore",
+      "BatteryPercentage",
+      "BatteryVoltage",
+      "GasResistance",
+      "Latitude",
+      "Longitude",
+      "PM1.0 (ATM)",
+      "PM10 (ATM)",
+      "PM2.5 (ATM)",
+      "Pressure",
+      "RawHumidity",
+      "RawTemperature",
+      "RunInStatus",
+      "StabStatus",
+      "VOC",
+      "WeatherVibes"
+    ];
+
+    // Filter only these measurements
+    const measurementFilter = measurements.map(m => `r["_measurement"] == "${m}"`).join(" or ");
+
+    const fluxQuery = `
+      from(bucket: "${bucket}")
+      |> range(start: -${days}d)
+      |> filter(fn: (r) => ${measurementFilter})
+      |> aggregateWindow(every: 1h, fn: mean, createEmpty: false)
+      |> pivot(rowKey: ["_time"], columnKey: ["_measurement"], valueColumn: "_value")
+      |> drop(columns: ["_start", "_stop", "_field", "_value", "_measurement", "_result", "_table", "topic"])
+      |> sort(columns: ["_time"], desc: true)
+      |> limit(n: ${limit}, offset: ${(page - 1) * limit})
+    `;
+
+    const rawData = [];
+    const lastValues = {}; // store last known value per measurement
+
+    client.getQueryApi(org).queryRows(fluxQuery, {
       next(row, tableMeta) {
-        const o = tableMeta.toObject(row);
-        data.push(o);  
+        const obj = tableMeta.toObject(row);
+
+        // Add device ID from 'host' column (or replace with your tag)
+        obj.id = obj.host || "Unknown";
+
+        // Fill missing measurement values with last known value
+        measurements.forEach(m => {
+          if (obj[m] == null && lastValues[m] != null) {
+            obj[m] = lastValues[m];
+          }
+          if (obj[m] != null) {
+            lastValues[m] = obj[m];
+          }
+        });
+
+        // Format time consistently
+        obj._time = new Date(obj._time).toISOString();
+
+        rawData.push(obj);
       },
       error(err) {
-        console.error(err);
+        console.error("Influx query error:", err);
         res.status(500).json({ error: err.message });
       },
       complete() {
         res.json({
-          data,
+          data: rawData,
           pagination: {
             page,
             limit,
-            totalPages: 10, // Fixed number of pages
-            hasMore: page < 10 && data.length === limit // Check if there are more pages
+            hasMore: rawData.length === limit
           }
         });
-      },
-    }
-  );
-});
-
-
-// Fetch All Sensors from MySQL
-app.get("/sensors", (_req, res) => {
-  const query = "SELECT * FROM sensors ";
-
-  db.query(query, (err, results) => {
-    if (err) {
-      {
-        return res.status(500).json({ error: err.message });
       }
-    }
-    res.json(results);
-  });
+    });
+
+  } catch (err) {
+    console.error("Backend error:", err);
+    res.status(500).json({ error: err.message });
+  }
 });
+
+
+
 
 // POST Sensor Data
 app.post("/sensors", (req, res) => {

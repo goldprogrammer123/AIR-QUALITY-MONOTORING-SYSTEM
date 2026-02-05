@@ -44,148 +44,187 @@ const AirReport = () => {
   const [pollutantValues, setPollutantValues] = useState({ nox: 0, voc: 0, co2: 0, benzene: 0 });
   const [pollutantAQIs, setPollutantAQIs] = useState({ nox: 0, voc: 0, co2: 0, benzene: 0 });
   const [dataWarning, setDataWarning] = useState('');
+  const BACKEND_URL = "http://localhost:3000";
+const PAGE_NUM = 1;
+const LIMIT = 100;
+const DAYS = 1;
+const CACHE_KEY = `airreport_page_${PAGE_NUM}`;
 
-  const fetchData = async () => {
-    setLoading(true);
-    try {
-      const result = await fetchWithCache('/api/sensordata/?format=json', 'air_report_data');
-      const processedData = (result || []).flatMap((item) =>
-        (item.measurements || []).map((measurement) => ({
-          id: item.device_id,
-          measurement: measurement.name,
-          value:
-            typeof measurement.value === 'number'
-              ? Number(measurement.value.toFixed(6))
-              : measurement.value,
-          _time: item.received_at,
-        }))
+   
+const fetchData = async () => {
+  setLoading(true);
+  try {
+    const result = await fetchWithCache(
+      `${BACKEND_URL}/influx?page=${PAGE_NUM}&limit=${LIMIT}&days=${DAYS}`,
+      CACHE_KEY
+    );
+
+    console.log('AirReport - API result:', result);
+
+    const rawData = result?.data || [];
+
+    // Convert pivoted data into { device_id, measurements: [], received_at } format
+    const processedData = rawData.map(item => {
+      const { id: device_id, _time: received_at, ...measurementsRaw } = item;
+
+      // Transform measurements object into array
+      const measurements = Object.entries(measurementsRaw).map(([key, value]) => ({
+        name: key,
+        value: typeof value === "number" ? Number(value.toFixed(6)) : value
+      }));
+
+      return { device_id, measurements, received_at };
+    });
+
+    setData(processedData);
+
+    if (processedData.length > 0) {
+      const pollutantData = extractPollutantData(
+        processedData.flatMap(d => d.measurements.map(m => ({
+          id: d.device_id,
+          measurement: m.name,
+          value: m.value,
+          _time: d.received_at
+        })))
       );
-      setData(processedData);
 
-      if (processedData.length > 0) {
-        const pollutantData = extractPollutantData(processedData);
-        setPollutantValues(pollutantData);
-        const { aqi, pollutant, pollutants } = calculateAQI(
-          pollutantData.nox,
-          pollutantData.voc,
-          pollutantData.co2,
-          pollutantData.benzene
-        );
-        setCurrentAQI(aqi);
-        setDominantPollutant(pollutant);
-        setAqiStatus(getAQIStatus(aqi).status);
-        setPollutantAQIs(pollutants);
-        setDataWarning(pollutantData.nox === 0 && pollutantData.voc === 0 &&
-                       pollutantData.co2 === 0 && pollutantData.benzene === 0
-          ? 'No pollutant data found' : '');
-      } else {
-        setDataWarning('No data received from API');
-      }
-    } catch (error) {
-      console.error('AirReport - Error fetching data:', error.message, error);
-      setDataWarning(`Error fetching data: ${error.message}`);
-    } finally {
-      setLoading(false);
+      setPollutantValues(pollutantData);
+      const { aqi, pollutant, pollutants } = calculateAQI(
+        pollutantData.nox,
+        pollutantData.voc,
+        pollutantData.co2,
+        pollutantData.benzene
+      );
+      setCurrentAQI(aqi);
+      setDominantPollutant(pollutant);
+      setAqiStatus(getAQIStatus(aqi).status);
+      setPollutantAQIs(pollutants);
+
+      setDataWarning(
+        pollutantData.nox === 0 &&
+        pollutantData.voc === 0 &&
+        pollutantData.co2 === 0 &&
+        pollutantData.benzene === 0
+          ? 'No pollutant data found'
+          : ''
+      );
+    } else {
+      setDataWarning('No data received from API');
     }
-  };
+  } catch (error) {
+    console.error('AirReport - Error fetching data:', error.message, error);
+    setDataWarning(`Error fetching data: ${error.message}`);
+  } finally {
+    setLoading(false);
+  }
+};
 
   useEffect(() => {
     fetchData();
   }, []);
 
-  const createHistoricalData = () => {
-    const endDate = new Date();
-    const startDate = selectedTimeRange === '24h' ? subDays(endDate, 1) : subDays(endDate, 7);
-    const hours = eachHourOfInterval({ start: startDate, end: endDate });
+const createHistoricalData = () => {
+  const endDate = new Date();
+  const startDate = selectedTimeRange === '24h' ? subDays(endDate, 1) : subDays(endDate, 7);
+  const hours = eachHourOfInterval({ start: startDate, end: endDate });
 
-    return hours.map(hour => {
-      const hourData = data.filter(item => {
-        const itemDate = new Date(item._time);
-        return itemDate.getHours() === hour.getHours() && itemDate.getDate() === hour.getDate();
-      });
-      if (hourData.length === 0) return { x: hour, y: 0 };
-      try {
-        const pollutantData = extractPollutantData(hourData);
-        const { aqi } = calculateAQI(
-          pollutantData.nox,
-          pollutantData.voc,
-          pollutantData.co2,
-          pollutantData.benzene
-        );
-        return { x: hour, y: aqi };
-      } catch (error) {
-        console.error('AirReport - Error in createHistoricalData:', error.message);
-        return { x: hour, y: 0 };
-      }
-    });
-  };
-
-  const createPollutantData = () => {
-    const pollutants = ['CO2 (ppm)', 'NOx (ppb)', 'VOC (ppb)', 'Benzene (ppb)'];
-    const values = ['co2', 'nox', 'voc', 'benzene'].map(pollutant => {
-      const relevantData = data.filter(item =>
-        item.measurement && typeof item.measurement === 'string' && item.measurement.toLowerCase().includes(pollutant)
+  return hours.map(hour => {
+    // Filter all data points within this hour
+    const hourData = data.filter(item => {
+      const itemDate = new Date(item._time);
+      return (
+        itemDate >= hour &&
+        itemDate < new Date(hour.getTime() + 60 * 60 * 1000) // next hour
       );
-      if (relevantData.length > 0) {
-        const latest = relevantData.reduce((a, b) =>
-          new Date(a._time) > new Date(b._time) ? a : b
-        );
-        return pollutant === 'nox' || pollutant === 'benzene' ? latest.value * 1000 : latest.value;
-      }
-      return 0;
     });
 
-    return {
-      labels: pollutants,
-      datasets: [{
-        label: 'Latest Levels',
-        data: values,
-        backgroundColor: [
-          'rgba(16, 185, 129, 0.8)',  // CO2
-          'rgba(59, 130, 246, 0.8)',  // NOx
-          'rgba(245, 158, 11, 0.8)',  // VOC
-          'rgba(239, 68, 68, 0.8)',   // Benzene
-        ],
-        borderColor: [
-          'rgba(16, 185, 129, 1)',
-          'rgba(59, 130, 246, 1)',
-          'rgba(245, 158, 11, 1)',
-          'rgba(239, 68, 68, 1)',
-        ],
-        borderWidth: 2
-      }]
-    };
-  };
+    if (hourData.length === 0) return { x: hour, y: null }; // show gap
 
-  const createPieChartData = () => {
-    return {
-      labels: ['NOx', 'VOC', 'CO2', 'Benzene'],
-      datasets: [
-        {
-          label: 'Pollutant AQI Contribution',
-          data: [
-            pollutantAQIs.nox,
-            pollutantAQIs.voc,
-            pollutantAQIs.co2,
-            pollutantAQIs.benzene,
-          ],
-          backgroundColor: [
-            'rgba(59, 130, 246, 0.8)',  // NOx
-            'rgba(245, 158, 11, 0.8)',  // VOC
-            'rgba(16, 185, 129, 0.8)',  // CO2
-            'rgba(239, 68, 68, 0.8)',   // Benzene
-          ],
-          borderColor: [
-            'rgba(59, 130, 246, 1)',
-            'rgba(245, 158, 11, 1)',
-            'rgba(16, 185, 129, 1)',
-            'rgba(239, 68, 68, 1)',
-          ],
-          borderWidth: 1,
-        },
-      ],
-    };
+    try {
+      // Average AQI for this hour
+      const allMeasurements = hourData.flatMap(d => d.measurements.map(m => ({
+        measurement: m.name,
+        value: m.value
+      })));
+
+      const pollutantData = extractPollutantData(allMeasurements);
+      const { aqi } = calculateAQI(
+        pollutantData.nox,
+        pollutantData.voc,
+        pollutantData.co2,
+        pollutantData.benzene
+      );
+
+      return { x: hour, y: aqi };
+    } catch (error) {
+      console.error('Error creating historical AQI data:', error.message);
+      return { x: hour, y: null };
+    }
+  });
+};
+
+
+const createPollutantData = () => {
+  const pollutants = [
+    { key: 'co2', label: 'CO2 (ppm)', color: 'rgba(16, 185, 129, 0.8)' },
+    { key: 'nox', label: 'NOx (ppb)', color: 'rgba(59, 130, 246, 0.8)' },
+    { key: 'voc', label: 'VOC (ppb)', color: 'rgba(245, 158, 11, 0.8)' },
+    { key: 'benzene', label: 'Benzene (ppb)', color: 'rgba(239, 68, 68, 0.8)' },
+  ];
+
+  const values = pollutants.map(p => {
+    const allData = data.flatMap(d => d.measurements.map(m => ({
+      measurement: m.name.toLowerCase(),
+      value: m.value,
+      _time: d.received_at
+    })));
+
+    const relevantData = allData.filter(m => m.measurement.includes(p.key));
+    if (relevantData.length === 0) return 0;
+
+    // take latest
+    const latest = relevantData.reduce((a, b) => new Date(a._time) > new Date(b._time) ? a : b);
+    return latest.value;
+  });
+
+  return {
+    labels: pollutants.map(p => p.label),
+    datasets: [{
+      label: 'Latest Levels',
+      data: values,
+      backgroundColor: pollutants.map(p => p.color),
+      borderColor: pollutants.map(p => p.color.replace('0.8', '1')),
+      borderWidth: 2
+    }]
   };
+};
+
+const createPieChartData = () => {
+  const keys = ['nox', 'voc', 'co2', 'benzene'];
+  const values = keys.map(k => pollutantAQIs[k] || 0);
+
+  return {
+    labels: ['NOx', 'VOC', 'CO2', 'Benzene'],
+    datasets: [{
+      label: 'Pollutant AQI Contribution',
+      data: values,
+      backgroundColor: [
+        'rgba(59, 130, 246, 0.8)',
+        'rgba(245, 158, 11, 0.8)',
+        'rgba(16, 185, 129, 0.8)',
+        'rgba(239, 68, 68, 0.8)',
+      ],
+      borderColor: [
+        'rgba(59, 130, 246, 1)',
+        'rgba(245, 158, 11, 1)',
+        'rgba(16, 185, 129, 1)',
+        'rgba(239, 68, 68, 1)',
+      ],
+      borderWidth: 1
+    }]
+  };
+};
+
 
   const lineChartOptions = {
     responsive: true,
@@ -302,40 +341,6 @@ const AirReport = () => {
         </div>
       </div>
 
-      {/* Example Table for Pollutant Data (if you want a table view) */}
-      {/*
-      <div className="bg-white shadow-2xl rounded-xl p-6 mb-6">
-        <h3 className="text-xl font-semibold mb-4 text-black">Pollutant Data Table</h3>
-        <div className="overflow-x-auto">
-          <table className="min-w-full border border-gray-200 rounded-xl">
-            <thead>
-              <tr className="bg-white">
-                <th className="p-3 border-b border-gray-200 text-left text-black font-bold">Pollutant</th>
-                <th className="p-3 border-b border-gray-200 text-left text-black font-bold">Value</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr className="bg-gray-50">
-                <td className="p-3 border-b border-gray-100 text-black">NOx (ppb)</td>
-                <td className="p-3 border-b border-gray-100 text-black">{pollutantValues.nox.toFixed(2)}</td>
-              </tr>
-              <tr>
-                <td className="p-3 border-b border-gray-100 text-black">VOC (ppb)</td>
-                <td className="p-3 border-b border-gray-100 text-black">{pollutantValues.voc.toFixed(2)}</td>
-              </tr>
-              <tr className="bg-gray-50">
-                <td className="p-3 border-b border-gray-100 text-black">CO2 (ppm)</td>
-                <td className="p-3 border-b border-gray-100 text-black">{pollutantValues.co2.toFixed(2)}</td>
-              </tr>
-              <tr>
-                <td className="p-3 border-b border-gray-100 text-black">Benzene (ppb)</td>
-                <td className="p-3 border-b border-gray-100 text-black">{pollutantValues.benzene.toFixed(2)}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-      */}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         <div className="lg:col-span-2">
